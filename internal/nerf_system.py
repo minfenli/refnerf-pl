@@ -205,14 +205,12 @@ class RefNeRFSystem(LightningModule):
             log = {}
 
             # Compute metrics.
-            metric = self.metric_harness(rendering['rgb'].cpu(), torch.tensor(rgb))
-            psnr, ssim = metric['psnr'], metric['ssim']
+            metric = self.metric_harness(rendering['rgb'], torch.tensor(rgb, device=rendering['rgb'].device))
+            psnr = metric['psnr']
             if np.isnan(psnr):
                 psnr = 0.
-            if np.isnan(ssim):
-                ssim = 0.
 
-            log = {'val/psnr': psnr, 'val/ssim': ssim}
+            log = {'val/psnr': psnr}
 
             # Log images to tensorboard.
             vis_suite = vis.visualize_suite(rendering, rays)
@@ -231,7 +229,5 @@ class RefNeRFSystem(LightningModule):
 
     def validation_epoch_end(self, outputs):
         mean_psnr = torch.tensor([x['val/psnr'] for x in outputs]).mean()
-        mean_ssim = torch.tensor([x['val/ssim'] for x in outputs]).mean()
 
         self.log('val/psnr', mean_psnr, prog_bar=True)
-        self.log('val/ssim', mean_ssim)

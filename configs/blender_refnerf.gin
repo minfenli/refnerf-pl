@@ -17,9 +17,9 @@ Config.data_loss_mult = 1.0
 Config.adam_beta1 = 0.9
 Config.adam_beta2 = 0.999
 Config.adam_eps = 1e-6
-Config.batch_size = 16384
-Config.render_chunk_size = 16384
-Config.max_steps = 250000
+Config.batch_size = 1024
+Config.render_chunk_size = 4096
+Config.max_steps = 300000
 
 Model.num_levels = 2
 Model.single_mlp = True

@@ -263,7 +263,7 @@ class BaseDataset(NeRFDataset, threading.Thread, metaclass=abc.ABCMeta):
 
         # Initialize attributes
         self.config= config
-        self._queue = queue.Queue(3)  # Set prefetch buffer to 3 batches.
+        # self._queue = queue.Queue(3)  # Set prefetch buffer to 3 batches.
         self.daemon = True  # Sets parent Thread to be a daemon.
         self._patch_size = np.maximum(config.patch_size, 1)
         self._batch_size = config.batch_size
@@ -335,7 +335,7 @@ class BaseDataset(NeRFDataset, threading.Thread, metaclass=abc.ABCMeta):
             self._next_fn = self._next_train
         else:
             self._next_fn = self._next_test
-        self._queue.put(self._next_fn())
+        # self._queue.put(self._next_fn())
         # self.start()
 
     # def __iter__(self):
@@ -510,10 +510,6 @@ class Blender(BaseDataset):
         if config.render_path:
             raise ValueError(
                 'render_path cannot be used for the blender dataset.')
-        if config.factor > 1:
-            factor = config.factor
-        else:
-            factor = 1
         pose_file = path.join(
             self.data_dir, f'transforms_{self.split.value}.json')
         with utils.open_file(pose_file, 'r') as fp:
@@ -527,8 +523,8 @@ class Blender(BaseDataset):
 
             def get_img(f, fprefix=fprefix):
                 image = utils.load_img(fprefix + f)
-                if factor > 1:
-                    image = lib_image.downsample(image, factor)
+                if config.factor > 1:
+                    image = lib_image.downsample(image, config.factor)
                 return image
 
             if self._use_tiffs:
@@ -570,7 +566,6 @@ class LLFF(BaseDataset):
     """LLFF Dataset."""
 
     def _load_renderings(self, config):
-        print(111)
         """Load images from disk."""
         # Set up scaling factor.
         image_dir_suffix = ''
@@ -598,9 +593,9 @@ class LLFF(BaseDataset):
             inds = np.argsort(image_names)
             image_names = [image_names[i] for i in inds]
             poses = poses[inds]
-        
+
         # Scale the inverse intrinsics matrix by the image downsampling factor.
-        pixtocam[:2] *= factor
+        pixtocam = pixtocam @ np.diag([factor, factor, 1.])
         self.pixtocams = pixtocam.astype(np.float32)
         self.focal = 1. / self.pixtocams[0, 0]
         self.distortion_params = distortion_params
@@ -621,20 +616,6 @@ class LLFF(BaseDataset):
                        for f in image_names]
         images = [utils.load_img(x) for x in image_paths]
         images = np.stack(images, axis=0) / 255.
-
-        # mask background if flag is set
-        if config.llff_white_background:
-            mask_dir = os.path.join(self.data_dir, 'masks')
-            mask_paths = [os.path.join(mask_dir, colmap_to_image[f].replace('png', 'jpg'))
-                          for f in image_names]
-            image_size = images[0].shape[:2]
-            try:
-                masks = [cv2.resize(utils.load_img(x), image_size[::-1])
-                         for x in mask_paths]
-                alphas = np.expand_dims(np.stack(masks, axis=0), -1) / 255.
-                images = images * alphas + (1. - alphas)  # remove background
-            except FileNotFoundError as err:
-                print('Masks not found [%s]' % err)
 
         # Load bounds if possible (only used in forward facing scenes).
         posefile = os.path.join(self.data_dir, 'poses_bounds.npy')
@@ -732,7 +713,7 @@ class RFFR(BaseDataset):
             poses = poses[inds]
 
         # Scale the inverse intrinsics matrix by the image downsampling factor.
-        pixtocam[:2] *= factor
+        pixtocam = pixtocam @ np.diag([factor, factor, 1.])
         self.pixtocams = pixtocam.astype(np.float32)
         self.focal = 1. / self.pixtocams[0, 0]
         self.distortion_params = distortion_params
@@ -948,12 +929,6 @@ class DTU(BaseDataset):
         """Load images from disk."""
         if config.render_path:
             raise ValueError('render_path cannot be used for the DTU dataset.')
-        
-        # Use downsampling factor
-        if config.factor > 1:
-            factor = config.factor
-        else:
-            factor = 1
 
         images = []
         pixtocams = []
@@ -975,8 +950,8 @@ class DTU(BaseDataset):
             fname = os.path.join(
                 self.data_dir, f'rect_{i:03d}_{light_str}.png')
             image = utils.load_img(fname) / 255.
-            if factor > 1:
-                image = lib_image.downsample(image, factor)
+            if config.factor > 1:
+                image = lib_image.downsample(image, config.factor)
             images.append(image)
 
             # Load projection matrix from file.
@@ -985,22 +960,24 @@ class DTU(BaseDataset):
                 projection = np.loadtxt(f, dtype=np.float32)
 
             # Decompose projection matrix into pose and camera matrix.
-            camera_mat, rot_mat, t = cv2.decomposeProjectionMatrix(projection)[:3]
+            camera_mat, rot_mat, t = cv2.decomposeProjectionMatrix(projection)[
+                :3]
             camera_mat = camera_mat / camera_mat[2, 2]
             pose = np.eye(4, dtype=np.float32)
             pose[:3, :3] = rot_mat.transpose()
             pose[:3, 3] = (t[:3] / t[3])[:, 0]
             pose = pose[:3]
             camtoworlds.append(pose)
+
+            if config.factor > 0:
+                # Scale camera matrix according to downsampling factor.
+                camera_mat = np.diag([1. / config.factor, 1. / config.factor, 1.
+                                      ]).astype(np.float32) @ camera_mat
             pixtocams.append(np.linalg.inv(camera_mat))
 
         pixtocams = np.stack(pixtocams)
         camtoworlds = np.stack(camtoworlds)
         images = np.stack(images)
-
-        if factor > 1:
-            # Scale camera matrix according to downsampling factor.
-            pixtocams[:, :2] *= factor
 
         def rescale_poses(poses):
             """Rescales camera poses according to maximum x/y/z value."""

@@ -48,7 +48,6 @@ class Config:
   llffhold: int = 8  # Use every Nth image for the test set. Used only by LLFF.
   # If true, use all input images for training.
   llff_use_all_images_for_training: bool = False
-  llff_white_background: bool = False  # If True, remove bkgd with masks
   use_tiffs: bool = False  # If True, use 32-bit TIFFs. Used only by Blender.
   compute_eval_metrics: bool = False  # If True, compute SSIM and PSNR
   compute_disp_metrics: bool = False  # If True, load and compute disparity MSE.
