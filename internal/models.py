@@ -31,6 +31,7 @@ from internal import ref_utils
 from internal import render
 from internal import stepfun
 from internal import utils
+from internal import sample_utils
 
 
 # apply same default initialization as the Jax version

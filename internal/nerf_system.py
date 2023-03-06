@@ -11,6 +11,7 @@ from internal import train_utils
 from internal import utils
 from internal import vis
 from internal import camera_utils
+from internal import sample_utils
 
 from pytorch_lightning import LightningModule
 from torch.utils.data import DataLoader
@@ -75,7 +76,22 @@ class RefNeRFSystem(LightningModule):
             rays,
             train_frac=self.train_frac(),
             compute_extras=\
-                self.config.compute_disp_metrics or self.config.compute_normal_metrics)
+                self.config.compute_disp_metrics or 
+                self.config.compute_normal_metrics or 
+                self.config.sample_noise_size > 0)
+
+        if self.config.sample_noise_size > 0 and (
+           self.config.consistency_diffuse_coarse_loss_mult > 0 or
+           self.config.consistency_specular_coarse_loss_mult > 0 or 
+           self.config.consistency_normal_coarse_loss_mult > 0 or
+           self.config.consistency_diffuse_loss_mult > 0 or
+           self.config.consistency_specular_loss_mult > 0 or 
+           self.config.consistency_normal_loss_mult > 0):
+            noisy_rays = sample_utils.sample_noisy_rays(rays, renderings[-1], self.config.sample_angle_range, self.config.sample_noise_size)
+            renderings_noise, ray_history_noise = self.model(
+                noisy_rays,
+                train_frac=self.train_frac(),
+                compute_extras=True)
 
         losses = {}
 
@@ -98,6 +114,20 @@ class RefNeRFSystem(LightningModule):
                 self.config.predicted_normal_loss_mult > 0):
             losses['predicted_normals'] = train_utils.predicted_normal_loss(
                 self.model, ray_history, self.config)
+
+        # calculate predicted consistency loss
+        if self.config.sample_noise_size > 0 and (
+           self.config.consistency_diffuse_coarse_loss_mult > 0 or
+           self.config.consistency_specular_coarse_loss_mult > 0 or 
+           self.config.consistency_normal_coarse_loss_mult > 0 or
+           self.config.consistency_diffuse_loss_mult > 0 or
+           self.config.consistency_specular_loss_mult > 0 or 
+           self.config.consistency_normal_loss_mult > 0):
+            consistency_losses = train_utils.noisy_consistency_loss(
+                self.model, renderings, renderings_noise, self.config)
+            (losses['diffuse_consistency'], 
+             losses['specular_consistency'], 
+             losses['normals_consistency']) = consistency_losses
 
         # calculate total loss
         loss = torch.sum(torch.stack(list(losses.values())))

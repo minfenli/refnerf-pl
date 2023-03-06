@@ -179,8 +179,11 @@ def volumetric_rendering(rgbs,
     rgb = (weights[..., None] * rgbs).sum(dim=-2) + bg_w * bg_rgbs
     rendering['rgb'] = rgb
 
+    t_mids = 0.5 * (tdist[..., :-1] + tdist[..., 1:])
+    rendering['distance'] = (weights[..., None] * t_mids[..., None]).sum(dim=-2)
+    rendering['acc'] = acc
+    
     if compute_extras:
-        rendering['acc'] = acc
 
         if extras is not None:
             for k, v in extras.items():
@@ -190,7 +193,6 @@ def volumetric_rendering(rgbs,
         def expectation(x):
             return (weights * x).sum(dim=-1) / torch.max(eps, acc)
 
-        t_mids = 0.5 * (tdist[..., :-1] + tdist[..., 1:])
         # For numerical stability this expectation is computing using log-distance.
         rendering['distance_mean'] = torch.clip(
             torch.nan_to_num(

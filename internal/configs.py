@@ -34,6 +34,7 @@ class Config:
   num_workers: int = 4
   num_gpus: int = 1
   val_sample_num: int = 3
+  sample_angle_range: float = 0.5 
 
   dataset_loader: str = 'llff'  # The type of dataset loader to use.
   dataset_debug_mode: bool = False  # If True, always loads specific batch
@@ -88,6 +89,14 @@ class Config:
   predicted_normal_loss_mult: float = 0.0  # Mult. on the predicted normal loss.
   # Mult. on the coarser predicted normal loss.
   predicted_normal_coarse_loss_mult: float = 0.0
+
+  sample_noise_size: int = 128  # The number of rays/pixels for noise sampling in each batch.
+  consistency_normal_loss_mult: float = 0.0
+  consistency_normal_coarse_loss_mult: float = 0.0
+  consistency_diffuse_loss_mult: float = 0.0
+  consistency_diffuse_coarse_loss_mult: float = 0.0
+  consistency_specular_loss_mult: float = 0.0
+  consistency_specular_coarse_loss_mult: float = 0.0
 
   lr_init: float = 0.002  # The initial learning rate.
   lr_final: float = 0.00002  # The final learning rate.
