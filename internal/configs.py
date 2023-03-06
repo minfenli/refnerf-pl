@@ -34,7 +34,7 @@ class Config:
   num_workers: int = 4
   num_gpus: int = 1
   val_sample_num: int = 3
-  sample_angle_range: float = 0.5 
+  sample_angle_range: float = 5 
 
   dataset_loader: str = 'llff'  # The type of dataset loader to use.
   dataset_debug_mode: bool = False  # If True, always loads specific batch

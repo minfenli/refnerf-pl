@@ -28,7 +28,7 @@ Config.consistency_diffuse_loss_mult = 0.1
 Config.consistency_diffuse_coarse_loss_mult = 0.01
 Config.consistency_specular_loss_mult = 3e-4
 Config.consistency_specular_coarse_loss_mult = 3e-5
-Config.sample_angle_range = 15
+Config.sample_angle_range = 5
 
 Model.num_levels = 2
 Model.single_mlp = True

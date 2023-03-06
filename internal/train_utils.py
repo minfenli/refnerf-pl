@@ -147,8 +147,8 @@ def noisy_consistency_loss(model, renderings, renderings_noise, config):
     total_normal_loss = 0.
     n_sample = len(renderings_noise[0]['rgb'])
     for i, (rendering, rendering_noise) in enumerate(zip(renderings, renderings_noise)):
-        diffuse_loss = ((rendering['diffuse'][:n_sample] - rendering_noise['diffuse'])**2).mean()
-        specular_loss = -((rendering['specular'][:n_sample] - rendering_noise['specular'])**2).mean()
+        diffuse_loss = (rendering['acc'][:n_sample]*((rendering['diffuse'][:n_sample] - rendering_noise['diffuse'])**2).sum(axis=-1)).mean()
+        specular_loss = -(rendering['acc'][:n_sample]*(rendering['specular'][:n_sample] - rendering_noise['specular'])**2).mean()
 
 
         n = rendering['normals'][:n_sample]
@@ -160,8 +160,8 @@ def noisy_consistency_loss(model, renderings, renderings_noise, config):
             raise ValueError(
                 'Predicted normals and gradient normals cannot be None if '
                 'consistency loss is on.')
-        normal_loss = torch.mean((1.0 - torch.sum(n * n_noise, dim=-1))) + \
-               torch.mean((1.0 - torch.sum(n_pred * n_pred_noise, dim=-1)))
+        normal_loss = torch.mean(rendering['acc'][:n_sample]*(1.0 - torch.sum(n * n_noise, dim=-1))) + \
+               torch.mean(rendering['acc'][:n_sample]*(1.0 - torch.sum(n_pred * n_pred_noise, dim=-1)))
         if i < model.num_levels - 1:
             total_diffuse_loss += config.consistency_diffuse_coarse_loss_mult * diffuse_loss
             total_specular_loss += config.consistency_specular_coarse_loss_mult * specular_loss
