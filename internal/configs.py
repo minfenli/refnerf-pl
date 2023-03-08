@@ -68,6 +68,7 @@ class Config:
   vis_num_rays: int = 16  # The number of rays to visualize.
   # Decimate images for tensorboard (ie, x[::d, ::d]) to conserve memory usage.
   vis_decimate: int = 0
+  save_top_k: int = 5
   resume_path = None
 
   # Only used by train.py:

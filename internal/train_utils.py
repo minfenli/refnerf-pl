@@ -147,8 +147,12 @@ def noisy_consistency_loss(model, renderings, renderings_noise, config):
     total_normal_loss = 0.
     n_sample = len(renderings_noise[0]['rgb'])
     for i, (rendering, rendering_noise) in enumerate(zip(renderings, renderings_noise)):
-        diffuse_loss = (rendering['acc'][:n_sample]*((rendering['diffuse'][:n_sample] - rendering_noise['diffuse'])**2).sum(axis=-1)).mean()
-        specular_loss = -(rendering['acc'][:n_sample]*(rendering['specular'][:n_sample] - rendering_noise['specular'])**2).mean()
+        diffuse_mse = (rendering['diffuse'][:n_sample] - rendering_noise['diffuse'])**2
+        specular_mse = (rendering['specular'][:n_sample] - rendering_noise['specular'])**2
+        diffuse_loss = (rendering['acc'][:n_sample]*
+            (diffuse_mse).sum(axis=-1)).mean()
+        specular_loss = (rendering['acc'][:n_sample]*
+            ((1-diffuse_mse)*(1-specular_mse)).sum(axis=-1)).mean()
 
 
         n = rendering['normals'][:n_sample]

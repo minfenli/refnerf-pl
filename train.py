@@ -60,7 +60,7 @@ def main(unused_argv):
                               save_last=True,
                               monitor='val/psnr',
                               mode='max',
-                              save_top_k=2,
+                              save_top_k=config.save_top_k,
                               )
                               
     pbar = TQDMProgressBar(refresh_rate=1)

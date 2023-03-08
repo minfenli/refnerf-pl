@@ -26,10 +26,10 @@ Config.max_steps = 300000
 Config.sample_noise_size = 512
 Config.consistency_normal_loss_mult = 3e-4
 Config.consistency_normal_coarse_loss_mult = 3e-5
-Config.consistency_diffuse_loss_mult = 0.1
-Config.consistency_diffuse_coarse_loss_mult = 0.01
-Config.consistency_specular_loss_mult = 3e-4
-Config.consistency_specular_coarse_loss_mult = 3e-5
+Config.consistency_diffuse_loss_mult = 1e-3
+Config.consistency_diffuse_coarse_loss_mult = 1e-4
+Config.consistency_specular_loss_mult = 1e-3
+Config.consistency_specular_coarse_loss_mult = 1e-4
 Config.sample_angle_range = 5
 
 Model.num_levels = 2
