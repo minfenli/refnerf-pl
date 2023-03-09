@@ -16,6 +16,7 @@
 
 import torch
 from internal import stepfun
+from internal import image
 
 
 def lift_gaussian(d, t_mean, t_var, r_var, diag):
@@ -154,7 +155,10 @@ def volumetric_rendering(rgbs,
                          bg_rgbs,
                          t_far,
                          compute_extras,
-                         extras=None):
+                         extras=None,
+                         srgb_mapping=False,
+                         specular_rgbs=None,
+                         specular_weights=None):
     """Volumetric Rendering Function.
 
     Args:
@@ -173,22 +177,35 @@ def volumetric_rendering(rgbs,
     eps = torch.tensor(torch.finfo(torch.float32).eps)
     rendering = {}
 
-    acc = weights.sum(dim=-1)
-    # The weight of the background.
-    bg_w = torch.maximum(torch.tensor(0), 1 - acc[..., None])
-    rgb = (weights[..., None] * rgbs).sum(dim=-2) + bg_w * bg_rgbs
+    if not specular_rgbs is None and not specular_weights is None:
+        acc = weights.sum(dim=-1) + specular_weights.sum(dim=-1)
+        # The weight of the background.
+        bg_w = torch.maximum(torch.tensor(0), 1 - acc[..., None])
+        diffuse_rgb = (weights[..., None] * rgbs).sum(dim=-2)
+        specular_rgb = (specular_weights[..., None] * specular_rgbs).sum(dim=-2)
+        rgb = diffuse_rgb + specular_rgb + bg_w * bg_rgbs
+        rendering['diffuse'] = diffuse_rgb
+        rendering['specular'] = specular_rgb
+    else:
+        acc = weights.sum(dim=-1)
+        # The weight of the background.
+        bg_w = torch.maximum(torch.tensor(0), 1 - acc[..., None])
+        rgb = (weights[..., None] * rgbs).sum(dim=-2) + bg_w * bg_rgbs
+
+
+    if srgb_mapping:
+        torch.clip(image.linear_to_srgb(rgb), 0.0, 1.0)
     rendering['rgb'] = rgb
 
     t_mids = 0.5 * (tdist[..., :-1] + tdist[..., 1:])
     rendering['distance'] = (weights[..., None] * t_mids[..., None]).sum(dim=-2)
     rendering['acc'] = acc
-    
-    if compute_extras:
 
+    if compute_extras:
         if extras is not None:
             for k, v in extras.items():
                 if v is not None:
-                    rendering[k] = (weights[..., None] * v).sum(dim=-2)
+                    rendering[k] = (weights[..., None] * v).sum(dim=-2)       
 
         def expectation(x):
             return (weights * x).sum(dim=-1) / torch.max(eps, acc)

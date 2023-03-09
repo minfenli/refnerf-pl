@@ -247,6 +247,15 @@ class Model(nn.Module):
                 rays.directions,
                 opaque_background=self.opaque_background,
             )[0]
+            if self.config.render_with_specular_density:
+                if not 'specular_density' in ray_results.keys():
+                    ValueError('Specular density prediction from mlps should be enabled.')
+                specular_weights = render.compute_alpha_weights(
+                    ray_results['specular_density'],
+                    tdist,
+                    rays.directions,
+                    opaque_background=self.opaque_background,
+                )[0]
 
             # Define or sample the background color for each ray.
             if self.bg_intensity_range[0] == self.bg_intensity_range[1]:
@@ -258,19 +267,42 @@ class Model(nn.Module):
                     self.bg_intensity_range[0] + self.bg_intensity_range[1]) / 2
 
             # Render each ray.
-            rendering = render.volumetric_rendering(
-                ray_results['rgb'],
-                weights,
-                tdist,
-                bg_rgbs,
-                rays.far,
-                compute_extras,
-                extras={
-                    k: v
-                    for k, v in ray_results.items()
-                    if k.startswith('normals') or k in [
-                        'roughness', 'diffuse', 'specular', 'tint']
-                })
+            if not self.config.render_with_specular_density:
+                rendering = render.volumetric_rendering(
+                    ray_results['rgb'],
+                    weights,
+                    tdist,
+                    bg_rgbs,
+                    rays.far,
+                    compute_extras,
+                    extras={
+                        k: v
+                        for k, v in ray_results.items()
+                        if k.startswith('normals') or k in [
+                            'roughness', 'diffuse', 'specular', 'tint']
+                    },
+                    srgb_mapping=self.config.srgb_mapping_when_rendering
+                    )
+            else:
+                if not self.config.srgb_mapping_when_rendering:
+                    ValueError('Srgb mapping should be done during rendering when using specular density.')
+                rendering = render.volumetric_rendering(
+                    ray_results['diffuse'],
+                    weights,
+                    tdist,
+                    bg_rgbs,
+                    rays.far,
+                    compute_extras,
+                    extras={
+                        k: v
+                        for k, v in ray_results.items()
+                        if k.startswith('normals') or k in [
+                            'roughness', 'tint']
+                    },
+                    srgb_mapping=True,
+                    specular_rgbs=ray_results['specular'],
+                    specular_weights=specular_weights
+                    )
 
             if compute_extras:
                 # Collect some rays to visualize directly. By naming these quantities
@@ -351,6 +383,7 @@ class MLP(nn.Module):
             use_diffuse_color: bool = False,
             use_specular_tint: bool = False,
             use_n_dot_v: bool = False,
+            enable_pred_specular_density: bool = False,
             bottleneck_noise: float = 0.0,
             density_activation: Callable[..., Any] = torch.nn.functional.softplus,
             density_bias: float = -1.,
@@ -362,6 +395,7 @@ class MLP(nn.Module):
             enable_pred_normals: bool = False,
             disable_density_normals: bool = False,
             disable_rgb: bool = False,
+            srgb_mapping: bool = True,
             warp_fn: Callable[..., Any] = None,
             basis_shape: str = 'icosahedron',
             basis_subdivisions: int = 2,
@@ -432,6 +466,7 @@ class MLP(nn.Module):
         self.use_diffuse_color = use_diffuse_color
         self.use_specular_tint = use_specular_tint
         self.use_n_dot_v = use_n_dot_v
+        self.enable_pred_specular_density = enable_pred_specular_density
         self.bottleneck_noise = bottleneck_noise
         self.density_activation = density_activation
         self.density_bias = density_bias
@@ -443,6 +478,7 @@ class MLP(nn.Module):
         self.enable_pred_normals = enable_pred_normals
         self.disable_density_normals = disable_density_normals
         self.disable_rgb = disable_rgb
+        self.srgb_mapping = srgb_mapping
         self.warp_fn = warp_fn
         self.basis_shape = basis_shape
         self.basis_subdivisions = basis_subdivisions
@@ -452,6 +488,11 @@ class MLP(nn.Module):
                                          not self.disable_density_normals):
             raise ValueError(
                 'Normals must be computed for reflection directions.')
+
+        # Make sure that...
+        if self.enable_pred_specular_density and not self.use_diffuse_color:
+            raise ValueError(
+                'Specular density is useless if not using diffuse color.')
 
         # Precompute and store (the transpose of) the basis being used.
         self.pos_basis_t = torch.tensor(
@@ -473,6 +514,8 @@ class MLP(nn.Module):
 
         # raw density layer
         self.raw_density = nn.Linear(self.net_width, 1)
+        if self.enable_pred_specular_density:
+            self.raw_specular_density = nn.Linear(self.net_width, 1)
 
         # predicted normals
         if self.enable_pred_normals:
@@ -552,10 +595,14 @@ class MLP(nn.Module):
                 x = torch.concatenate([x, inputs], dim=-1)
 
         raw_density = self.raw_density(x)[..., 0]
+        if self.enable_pred_specular_density:
+            raw_specular_density = self.raw_specular_density(x)[..., 0]
 
         # Add noise to regularize the density predictions if needed.
         if self.density_noise > 0:
             raw_density += self.density_noise * torch.normal(0, 1, raw_density.shape)
+            if self.enable_pred_specular_density:
+                raw_specular_density += self.density_noise * torch.normal(0, 1, raw_specular_density.shape)
 
         # calculate normals through density gradients
         normals = None
@@ -589,6 +636,8 @@ class MLP(nn.Module):
 
         # Apply bias and activation to raw density
         density = self.density_activation(raw_density + self.density_bias)
+        if self.enable_pred_specular_density:
+            specular_density = self.density_activation(raw_specular_density + self.density_bias)
 
         roughness = 0
         if self.disable_rgb:
@@ -675,10 +724,12 @@ class MLP(nn.Module):
                 else:
                     specular_linear = 0.5 * rgb
 
-                # Combine specular and diffuse components and tone map to sRGB.
-                rgb = torch.clip(
-                    image.linear_to_srgb(specular_linear + diffuse_linear), 0.0, 1.0)
-
+                if self.srgb_mapping:
+                    # Combine specular and diffuse components and tone map to sRGB.
+                    rgb = torch.clip(
+                        image.linear_to_srgb(specular_linear + diffuse_linear), 0.0, 1.0)
+                else:
+                    rgb = specular_linear + diffuse_linear
             # Apply padding, mapping color to [-rgb_padding, 1+rgb_padding].
             rgb = rgb * (1 + 2 * self.rgb_padding) - self.rgb_padding
 
@@ -696,6 +747,8 @@ class MLP(nn.Module):
         if self.use_diffuse_color:
             ray_results['diffuse'] = diffuse_linear
             ray_results['specular'] = specular_linear
+            if self.enable_pred_specular_density:
+                ray_results['specular_density'] = specular_density
         if self.enable_pred_roughness:
             ray_results['roughness'] = roughness
 

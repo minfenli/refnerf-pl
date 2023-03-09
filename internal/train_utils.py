@@ -140,19 +140,20 @@ def predicted_normal_loss(model, ray_history, config):
     return total_loss
 
 
-def noisy_consistency_loss(model, renderings, renderings_noise, config):
+def noisy_consistency_loss(model, renderings, renderings_noise, config, warmup_ratio=1.):
     """Computes the consistency loss."""
     total_diffuse_loss = 0.
     total_specular_loss = 0.
     total_normal_loss = 0.
     n_sample = len(renderings_noise[0]['rgb'])
     for i, (rendering, rendering_noise) in enumerate(zip(renderings, renderings_noise)):
-        diffuse_mse = (rendering['diffuse'][:n_sample] - rendering_noise['diffuse'])**2
+        diffuse_diff = torch.abs((rendering['diffuse'][:n_sample] - rendering_noise['diffuse']))
+        diffuse_mse = (diffuse_diff)**2
         specular_mse = (rendering['specular'][:n_sample] - rendering_noise['specular'])**2
         diffuse_loss = (rendering['acc'][:n_sample]*
             (diffuse_mse).sum(axis=-1)).mean()
         specular_loss = (rendering['acc'][:n_sample]*
-            ((1-diffuse_mse)*(1-specular_mse)).sum(axis=-1)).mean()
+            ((1-diffuse_diff)*(1-specular_mse)).sum(axis=-1)).mean()
 
 
         n = rendering['normals'][:n_sample]
@@ -167,13 +168,13 @@ def noisy_consistency_loss(model, renderings, renderings_noise, config):
         normal_loss = torch.mean(rendering['acc'][:n_sample]*(1.0 - torch.sum(n * n_noise, dim=-1))) + \
                torch.mean(rendering['acc'][:n_sample]*(1.0 - torch.sum(n_pred * n_pred_noise, dim=-1)))
         if i < model.num_levels - 1:
-            total_diffuse_loss += config.consistency_diffuse_coarse_loss_mult * diffuse_loss
-            total_specular_loss += config.consistency_specular_coarse_loss_mult * specular_loss
-            total_normal_loss += config.consistency_normal_coarse_loss_mult * normal_loss
+            total_diffuse_loss += warmup_ratio * config.consistency_diffuse_coarse_loss_mult * diffuse_loss
+            total_specular_loss += warmup_ratio * config.consistency_specular_coarse_loss_mult * specular_loss
+            total_normal_loss += warmup_ratio * config.consistency_normal_coarse_loss_mult * normal_loss
         else:
-            total_diffuse_loss += config.consistency_diffuse_loss_mult * diffuse_loss
-            total_specular_loss += config.consistency_specular_loss_mult * specular_loss
-            total_normal_loss += config.consistency_normal_loss_mult * normal_loss
+            total_diffuse_loss += warmup_ratio * config.consistency_diffuse_loss_mult * diffuse_loss
+            total_specular_loss += warmup_ratio * config.consistency_specular_loss_mult * specular_loss
+            total_normal_loss += warmup_ratio * config.consistency_normal_loss_mult * normal_loss
     return total_diffuse_loss, total_specular_loss, total_normal_loss
 
 

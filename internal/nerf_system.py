@@ -80,6 +80,12 @@ class RefNeRFSystem(LightningModule):
                 self.config.compute_normal_metrics or 
                 self.config.sample_noise_size > 0)
 
+        # calculate warmup ratio
+        if self.config.consistency_warmup_steps > 0.:
+            warmup_ratio = min(1., self.global_step/(self.config.consistency_warmup_steps*self.config.max_steps))
+        else:
+            warmup_ratio = 1.
+
         if self.config.sample_noise_size > 0 and (
            self.config.consistency_diffuse_coarse_loss_mult > 0 or
            self.config.consistency_specular_coarse_loss_mult > 0 or 
@@ -87,7 +93,9 @@ class RefNeRFSystem(LightningModule):
            self.config.consistency_diffuse_loss_mult > 0 or
            self.config.consistency_specular_loss_mult > 0 or 
            self.config.consistency_normal_loss_mult > 0):
-            noisy_rays = sample_utils.sample_noisy_rays(rays, renderings[-1], self.config.sample_angle_range, self.config.sample_noise_size)
+            noisy_rays = sample_utils.sample_noisy_rays(
+                rays, renderings[-1], self.config.sample_angle_range, 
+                self.config.sample_noise_size, warmup_ratio)
             renderings_noise, ray_history_noise = self.model(
                 noisy_rays,
                 train_frac=self.train_frac(),
@@ -124,7 +132,7 @@ class RefNeRFSystem(LightningModule):
            self.config.consistency_specular_loss_mult > 0 or 
            self.config.consistency_normal_loss_mult > 0):
             consistency_losses = train_utils.noisy_consistency_loss(
-                self.model, renderings, renderings_noise, self.config)
+                self.model, renderings, renderings_noise, self.config, warmup_ratio)
             (losses['diffuse_consistency'], 
              losses['specular_consistency'], 
              losses['normals_consistency']) = consistency_losses

@@ -39,9 +39,10 @@ def euler_angles_to_matrix(euler_angles: torch.Tensor) -> torch.Tensor:
 @torch.no_grad()
 def sample_noisy_rays(rays: utils.Rays, rendering: dict,
                       sample_angle_range: float = 0., 
-                      sample_noise_size: int = 128) -> utils.Rays:
+                      sample_noise_size: int = 128,
+                      warmup_ratio: float = 1.) -> utils.Rays:
     xyz_angle = torch.zeros(3, device=rendering['distance'].device).uniform_(
-        0, sample_angle_range/180 * np.pi)
+        0, sample_angle_range/180 * np.pi * warmup_ratio)
     T = euler_angles_to_matrix(xyz_angle)
 
     distance = rendering['distance'][:sample_noise_size]

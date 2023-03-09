@@ -92,12 +92,16 @@ class Config:
   predicted_normal_coarse_loss_mult: float = 0.0
 
   sample_noise_size: int = 128  # The number of rays/pixels for noise sampling in each batch.
+  consistency_warmup_steps: float = 0.
   consistency_normal_loss_mult: float = 0.0
   consistency_normal_coarse_loss_mult: float = 0.0
   consistency_diffuse_loss_mult: float = 0.0
   consistency_diffuse_coarse_loss_mult: float = 0.0
   consistency_specular_loss_mult: float = 0.0
   consistency_specular_coarse_loss_mult: float = 0.0
+
+  srgb_mapping_when_rendering: bool = False
+  render_with_specular_density: bool = False
 
   lr_init: float = 0.002  # The initial learning rate.
   lr_final: float = 0.00002  # The final learning rate.
