@@ -101,6 +101,7 @@ class Config:
   consistency_specular_coarse_loss_mult: float = 0.0
 
   srgb_mapping_when_rendering: bool = False
+  srgb_mapping_type: str = 'linear'  # ['linear', 'srgb', 'norm_srgb'] Only be used when srgb_mapping_when_rendering
   render_with_specular_density: bool = False
 
   lr_init: float = 0.002  # The initial learning rate.

@@ -248,24 +248,26 @@ class RefNeRFSystem(LightningModule):
             if np.isnan(psnr):
                 psnr = 0.
 
-            log = {'val/psnr': psnr}
+            log = {'psnr': psnr}
 
             # Log images to tensorboard.
             vis_suite = vis.visualize_suite(rendering, rays)
             self.summary_writer.add_image(
                 'val/true_color', rgb, self.global_step, dataformats='HWC')
             if normals is not None:
-                self.logger.experiment.add_image(
+                self.summary_writer.add_image(
                     'val/true_normals', normals / 2. + 0.5, self.global_step,
                     dataformats='HWC')
             for k, v in vis_suite.items():
                 self.summary_writer.add_image(
                     'val/output_' + k, v, self.global_step,
                     dataformats='HWC' if len(v.shape) == 3 else 'HW')
-
+            for k, v in log.items():
+                self.summary_writer.add_scalar(
+                    'val/output_' + k, v, self.global_step)
         return log
 
     def validation_epoch_end(self, outputs):
-        mean_psnr = torch.tensor([x['val/psnr'] for x in outputs]).mean()
+        mean_psnr = torch.tensor([x['psnr'] for x in outputs]).mean()
 
         self.log('val/psnr', mean_psnr, prog_bar=True)

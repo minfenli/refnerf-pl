@@ -156,7 +156,7 @@ def volumetric_rendering(rgbs,
                          t_far,
                          compute_extras,
                          extras=None,
-                         srgb_mapping=False,
+                         srgb_mapping='none',
                          specular_rgbs=None,
                          specular_weights=None):
     """Volumetric Rendering Function.
@@ -192,14 +192,27 @@ def volumetric_rendering(rgbs,
         bg_w = torch.maximum(torch.tensor(0), 1 - acc[..., None])
         rgb = (weights[..., None] * rgbs).sum(dim=-2) + bg_w * bg_rgbs
 
-
-    if srgb_mapping:
-        torch.clip(image.linear_to_srgb(rgb), 0.0, 1.0)
+    if srgb_mapping=='none':
+        rgb = rgb
+    elif srgb_mapping=='linear':
+        # simple clip
+        rgb = torch.clip(rgb, 0.0, 1.0)
+    elif srgb_mapping=='srgb':
+        rgb = torch.clip(image.linear_to_srgb(rgb), 0.0, 1.0)
+    elif srgb_mapping=='norm_srgb':
+        # normalize up to 1 according to max(r,g,b)
+        rgb = rgb/torch.maximum(rgb.amax(axis=-1, keepdim=True), torch.ones_like(rgb[...,:1]))
+        rgb = torch.clip(image.linear_to_srgb(rgb), 0.0, 1.0)
+    else:
+        ValueError('Mapping types are linear, srgb, norm_srgb')
     rendering['rgb'] = rgb
 
     t_mids = 0.5 * (tdist[..., :-1] + tdist[..., 1:])
     rendering['distance'] = (weights[..., None] * t_mids[..., None]).sum(dim=-2)
     rendering['acc'] = acc
+
+    if not specular_weights is None:
+        rendering['distance_specular'] = (specular_weights[..., None] * t_mids[..., None]).sum(dim=-2)
 
     if compute_extras:
         if extras is not None:

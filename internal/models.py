@@ -281,7 +281,9 @@ class Model(nn.Module):
                         if k.startswith('normals') or k in [
                             'roughness', 'diffuse', 'specular', 'tint']
                     },
-                    srgb_mapping=self.config.srgb_mapping_when_rendering
+                    srgb_mapping=self.config.srgb_mapping_type \
+                        if self.config.srgb_mapping_when_rendering
+                        else 'none'
                     )
             else:
                 if not self.config.srgb_mapping_when_rendering:
@@ -299,7 +301,7 @@ class Model(nn.Module):
                         if k.startswith('normals') or k in [
                             'roughness', 'tint']
                     },
-                    srgb_mapping=True,
+                    srgb_mapping=self.config.srgb_mapping_type,
                     specular_rgbs=ray_results['specular'],
                     specular_weights=specular_weights
                     )

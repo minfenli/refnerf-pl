@@ -33,6 +33,7 @@ Config.consistency_specular_coarse_loss_mult = 3e-6
 Config.sample_angle_range = 5
 
 Config.srgb_mapping_when_rendering = True
+Config.srgb_mapping_type = 'srgb'
 Config.render_with_specular_density = True
 NerfMLP.enable_pred_specular_density = True
 NerfMLP.srgb_mapping = False

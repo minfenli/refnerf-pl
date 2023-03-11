@@ -23,9 +23,15 @@ Config.batch_size = 1024
 Config.render_chunk_size = 4096
 Config.max_steps = 300000
 
-Config.srgb_mapping_when_rendering = True
-Config.srgb_mapping_type = 'srgb'
-NerfMLP.srgb_mapping = False
+Config.sample_noise_size = 512
+Config.consistency_normal_loss_mult = 3e-5
+Config.consistency_normal_coarse_loss_mult = 3e-6
+Config.consistency_diffuse_loss_mult = 3e-5
+Config.consistency_diffuse_coarse_loss_mult = 3e-6
+Config.consistency_specular_loss_mult = 3e-5
+Config.consistency_specular_coarse_loss_mult = 3e-6
+Config.consistency_warmup_steps = 0.5
+Config.sample_angle_range = 5
 
 Model.num_levels = 2
 Model.single_mlp = True
