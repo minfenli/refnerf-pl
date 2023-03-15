@@ -137,6 +137,10 @@ class RefNeRFSystem(LightningModule):
              losses['specular_consistency'], 
              losses['normals_consistency']) = consistency_losses
 
+        # calculate accumulated weights loss
+        if self.config.accumulated_weights_loss_mult > 0:
+            losses['acc'] = train_utils.accumulated_weights_loss(renderings, self.config)
+
         # calculate total loss
         loss = torch.sum(torch.stack(list(losses.values())))
         self.stats['loss'] = loss.detach().cpu()

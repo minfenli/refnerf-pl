@@ -189,8 +189,17 @@ def noisy_consistency_loss(model, renderings, renderings_noise, config, warmup_r
             raise ValueError(
                 'Predicted normals and gradient normals cannot be None if '
                 'consistency loss is on.')
-        normal_loss = torch.mean((1.0 - torch.sum(n * n_noise, dim=-1))) + \
-               torch.mean((1.0 - torch.sum(n_pred * n_pred_noise, dim=-1)))
+
+        if config.consistency_normal_loss_target == 'normals':                
+            normal_loss = torch.mean((1.0 - torch.sum(n * n_noise, dim=-1))) + \
+                torch.mean((1.0 - torch.sum(n * n_noise, dim=-1)))
+        elif config.consistency_normal_loss_target == 'normals_pred': 
+            normal_loss = torch.mean((1.0 - torch.sum(n * n_noise, dim=-1))) + \
+                torch.mean((1.0 - torch.sum(n_pred * n_pred_noise, dim=-1)))   
+        else:
+            raise ValueError(
+                'Given an unknown type of consistency_normal_loss_target.')
+
         if i < model.num_levels - 1:
             total_diffuse_loss += warmup_ratio * config.consistency_diffuse_coarse_loss_mult * diffuse_loss
             total_specular_loss += warmup_ratio * config.consistency_specular_coarse_loss_mult * specular_loss
@@ -200,6 +209,12 @@ def noisy_consistency_loss(model, renderings, renderings_noise, config, warmup_r
             total_specular_loss += warmup_ratio * config.consistency_specular_loss_mult * specular_loss
             total_normal_loss += warmup_ratio * config.consistency_normal_loss_mult * normal_loss
     return total_diffuse_loss, total_specular_loss, total_normal_loss
+
+
+def accumulated_weights_loss(renderings, config):
+    """Computes accumulated_weights_loss to intrigue model output higher accs."""
+    return config.accumulated_weights_loss_mult * \
+        (renderings['acc'][-1])**2
 
 
 def create_train_step(model: models.Model,

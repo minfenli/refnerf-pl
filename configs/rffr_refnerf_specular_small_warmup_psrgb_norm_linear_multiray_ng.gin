@@ -1,4 +1,4 @@
-Config.dataset_loader = 'llff'
+Config.dataset_loader = 'rffr'
 Config.batching = 'all_images'
 Config.near = 0.
 Config.far = 1.
@@ -23,10 +23,11 @@ Config.batch_size = 1024
 Config.render_chunk_size = 4096
 Config.max_steps = 300000
 
-Config.sample_noise_size = 128
+Config.sample_noise_size = 512
 Config.sample_noise_angles = 4
 Config.consistency_diffuse_loss_type = 'mse'
-Config.consistency_specular_loss_type = 'mse'
+Config.consistency_specular_loss_type = 'var'
+Config.consistency_normal_loss_target = 'normals'
 Config.consistency_normal_loss_mult = 3e-5
 Config.consistency_normal_coarse_loss_mult = 3e-6
 Config.consistency_diffuse_loss_mult = 3e-5
@@ -50,7 +51,6 @@ Model.dilation_multiplier = 0.
 Model.dilation_bias = 0.
 Model.single_jitter = False
 Model.resample_padding = 0.01
-Model.bg_intensity_range = (0., 0.)
 
 NerfMLP.net_depth = 8
 NerfMLP.net_width = 256

@@ -96,12 +96,14 @@ class Config:
   consistency_warmup_steps: float = 0.
   consistency_normal_loss_mult: float = 0.0
   consistency_normal_coarse_loss_mult: float = 0.0
+  consistency_normal_loss_target: str = 'normals_pred'
   consistency_diffuse_loss_type: str = 'mse'
   consistency_diffuse_loss_mult: float = 0.0
   consistency_diffuse_coarse_loss_mult: float = 0.0
   consistency_specular_loss_type: str = 'mse'
   consistency_specular_loss_mult: float = 0.0
   consistency_specular_coarse_loss_mult: float = 0.0
+  accumulated_weights_loss_mult: float = 0.0
 
   srgb_mapping_when_rendering: bool = False
   srgb_mapping_type: str = 'linear'  # ['linear', 'srgb', 'norm_srgb'] Only be used when srgb_mapping_when_rendering
