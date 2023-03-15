@@ -23,10 +23,8 @@ Config.batch_size = 1024
 Config.render_chunk_size = 4096
 Config.max_steps = 300000
 
-Config.srgb_mapping_when_rendering = True
-Config.srgb_mapping_type = 'norm_linear'
-config.supervised_by_linear_rgb = True
-NerfMLP.srgb_mapping = False
+Config.srgb_mapping_when_rendering = False
+NerfMLP.srgb_mapping = True
 
 Model.num_levels = 2
 Model.single_mlp = True

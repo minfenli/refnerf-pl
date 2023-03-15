@@ -95,7 +95,7 @@ class RefNeRFSystem(LightningModule):
            self.config.consistency_normal_loss_mult > 0):
             noisy_rays = sample_utils.sample_noisy_rays(
                 rays, renderings[-1], self.config.sample_angle_range, 
-                self.config.sample_noise_size, warmup_ratio)
+                self.config.sample_noise_size, self.config.sample_noise_angles, warmup_ratio)
             renderings_noise, ray_history_noise = self.model(
                 noisy_rays,
                 train_frac=self.train_frac(),

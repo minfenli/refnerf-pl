@@ -197,11 +197,19 @@ def volumetric_rendering(rgbs,
     elif srgb_mapping=='linear':
         # simple clip
         rgb = torch.clip(rgb, 0.0, 1.0)
+    elif srgb_mapping=='norm_linear':
+        # normalize up to 1 according to max(r,g,b)
+        with torch.no_grad():
+            rgb_norm = torch.maximum(rgb.amax(axis=-1, keepdim=True), torch.ones_like(rgb[...,:1]))
+        rgb = rgb/rgb_norm
+        rgb = torch.clip(rgb, 0.0, 1.0)
     elif srgb_mapping=='srgb':
         rgb = torch.clip(image.linear_to_srgb(rgb), 0.0, 1.0)
     elif srgb_mapping=='norm_srgb':
         # normalize up to 1 according to max(r,g,b)
-        rgb = rgb/torch.maximum(rgb.amax(axis=-1, keepdim=True), torch.ones_like(rgb[...,:1]))
+        with torch.no_grad():
+            rgb_norm = torch.maximum(rgb.amax(axis=-1, keepdim=True), torch.ones_like(rgb[...,:1]))
+        rgb = rgb/rgb_norm
         rgb = torch.clip(image.linear_to_srgb(rgb), 0.0, 1.0)
     else:
         ValueError('Mapping types are linear, srgb, norm_srgb')

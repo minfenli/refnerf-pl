@@ -728,8 +728,13 @@ class MLP(nn.Module):
 
                 if self.srgb_mapping:
                     # Combine specular and diffuse components and tone map to sRGB.
-                    rgb = torch.clip(
-                        image.linear_to_srgb(specular_linear + diffuse_linear), 0.0, 1.0)
+                    # rgb = torch.clip(
+                    #     image.linear_to_srgb(specular_linear + diffuse_linear), 0.0, 1.0)
+                    rgb = specular_linear + diffuse_linear
+                    with torch.no_grad():
+                        rgb_norm = torch.maximum(rgb.amax(axis=-1, keepdim=True), torch.ones_like(rgb[...,:1]))
+                    rgb = rgb/rgb_norm
+                    rgb = torch.clip(image.linear_to_srgb(rgb), 0.0, 1.0)
                 else:
                     rgb = specular_linear + diffuse_linear
             # Apply padding, mapping color to [-rgb_padding, 1+rgb_padding].

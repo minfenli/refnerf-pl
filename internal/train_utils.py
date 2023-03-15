@@ -43,7 +43,10 @@ def compute_data_loss(batch, renderings, rays, config):
     if config.disable_multiscale_loss:
         lossmult = torch.ones_like(lossmult)
     for rendering in renderings:
-        resid_sq = (rendering['rgb'] - torch.tensor(batch.rgb[..., :3], device=rendering['rgb'].device))**2
+        gt_rgb = torch.tensor(batch.rgb[..., :3], device=rendering['rgb'].device)
+        if config.supervised_by_linear_rgb:
+            gt_rgb = image.srgb_to_linear(gt_rgb)
+        resid_sq = (rendering['rgb'] - gt_rgb)**2
         denom = lossmult.sum()
         stats['mses'].append((lossmult * resid_sq).sum() / denom)
 
@@ -145,28 +148,49 @@ def noisy_consistency_loss(model, renderings, renderings_noise, config, warmup_r
     total_diffuse_loss = 0.
     total_specular_loss = 0.
     total_normal_loss = 0.
-    n_sample = len(renderings_noise[0]['rgb'])
+    n_samples = config.sample_noise_size
+    n_angles = config.sample_noise_angles
+
     for i, (rendering, rendering_noise) in enumerate(zip(renderings, renderings_noise)):
-        diffuse_diff = torch.abs((rendering['diffuse'][:n_sample] - rendering_noise['diffuse']))
-        diffuse_mse = (diffuse_diff)**2
-        specular_mse = (rendering['specular'][:n_sample] - rendering_noise['specular'])**2
-        diffuse_loss = (rendering['acc'][:n_sample]*
-            (diffuse_mse).sum(axis=-1)).mean()
-        specular_loss = (rendering['acc'][:n_sample]*
-            ((1-diffuse_diff)*(1-specular_mse)).sum(axis=-1)).mean()
+        # (n_samples, n_angles, ...)
+        noise_diffuse_rgb = rendering_noise['diffuse'].reshape(n_samples, n_angles, *rendering_noise['diffuse'].shape[1:])
+        noise_specular_rgb = rendering_noise['specular'].reshape(n_samples, n_angles, *rendering_noise['specular'].shape[1:])
+        
+        if config.consistency_diffuse_loss_type == 'mse':
+            # (n_samples, n_angles, ...)
+            diffuse_mse = (rendering['diffuse'][:n_samples, None] - noise_diffuse_rgb)**2
+            diffuse_loss = diffuse_mse.sum(axis=-1).mean()
+        elif config.consistency_diffuse_loss_type == 'avg_mse':
+            # (n_samples, n_angles, ...)
+            diffuse_mse = (rendering['diffuse'][:n_samples, None] - noise_diffuse_rgb.mean(axis=1, keepdim=True))**2
+            diffuse_loss = diffuse_mse.sum(axis=-1).mean()
+        elif config.consistency_specular_loss_type == 'var':
+            diffuse_rays = torch.cat([rendering['diffuse'][:n_samples, None], noise_diffuse_rgb], axis=1)            
+            diffuse_var = diffuse_rays.var(axis=1, keepdim=True).mean(axis=-1, keepdim=True)
+            diffuse_loss = diffuse_var.sum(axis=-1).mean()
 
+        if config.consistency_specular_loss_type == 'mse':
+            specular_mse = (rendering['specular'][:n_samples, None] - noise_specular_rgb)**2
+            specular_loss = -specular_mse.sum(axis=-1).mean()
+        elif config.consistency_specular_loss_type == 'avg_mse':
+            specular_mse = (rendering['specular'][:n_samples, None] - noise_specular_rgb.mean(axis=1, keepdim=True))**2
+            specular_loss = -specular_mse.sum(axis=-1).mean()
+        elif config.consistency_specular_loss_type == 'var':
+            specular_rays = torch.cat([rendering['specular'][:n_samples, None], noise_specular_rgb], axis=1)            
+            specular_var = specular_rays.var(axis=1, keepdim=True).mean(axis=-1, keepdim=True)
+            specular_loss = -specular_var.sum(axis=-1).mean()
 
-        n = rendering['normals'][:n_sample]
-        n_pred = rendering['normals_pred'][:n_sample]
-        n_noise = rendering_noise['normals']
-        n_pred_noise = rendering_noise['normals_pred']
+        n = rendering['normals'][:n_samples, None]
+        n_pred = rendering['normals_pred'][:n_samples, None]
+        n_noise = rendering_noise['normals'].reshape(n_samples, n_angles, *rendering_noise['normals'].shape[1:])
+        n_pred_noise = rendering_noise['normals_pred'].reshape(n_samples, n_angles, *rendering_noise['normals_pred'].shape[1:])
 
         if n is None or n_pred is None:
             raise ValueError(
                 'Predicted normals and gradient normals cannot be None if '
                 'consistency loss is on.')
-        normal_loss = torch.mean(rendering['acc'][:n_sample]*(1.0 - torch.sum(n * n_noise, dim=-1))) + \
-               torch.mean(rendering['acc'][:n_sample]*(1.0 - torch.sum(n_pred * n_pred_noise, dim=-1)))
+        normal_loss = torch.mean((1.0 - torch.sum(n * n_noise, dim=-1))) + \
+               torch.mean((1.0 - torch.sum(n_pred * n_pred_noise, dim=-1)))
         if i < model.num_levels - 1:
             total_diffuse_loss += warmup_ratio * config.consistency_diffuse_coarse_loss_mult * diffuse_loss
             total_specular_loss += warmup_ratio * config.consistency_specular_coarse_loss_mult * specular_loss
