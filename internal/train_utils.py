@@ -214,7 +214,7 @@ def noisy_consistency_loss(model, renderings, renderings_noise, config, warmup_r
 def accumulated_weights_loss(renderings, config):
     """Computes accumulated_weights_loss to intrigue model output higher accs."""
     return config.accumulated_weights_loss_mult * \
-        (renderings['acc'][-1])**2
+        ((1-renderings[-1]['acc'])**2).mean()
 
 
 def create_train_step(model: models.Model,

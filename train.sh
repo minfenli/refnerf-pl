@@ -11,6 +11,7 @@ cd ${DIR}
 BATCH_SIZE=1024
 RENDER_CHUNK_SIZE=4096
 MAX_STEPS=300000
+VAL_EVERY=10000
 
 if [[ "$CONFIG" == *"llff"* ]]; then
   RENDER_PATH=True
@@ -32,3 +33,4 @@ python3 train.py \
   --gin_bindings="Config.checkpoint_dir = '${DIR}/exps'" \
   --gin_bindings="Config.batch_size = ${BATCH_SIZE}" \
   --gin_bindings="Config.render_chunk_size = ${RENDER_CHUNK_SIZE}" \
+  --gin_bindings="Config.checkpoint_every = ${VAL_EVERY}" \
