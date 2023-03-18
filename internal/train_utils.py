@@ -85,8 +85,70 @@ def compute_data_loss(batch, renderings, rays, config):
         config.data_coarse_loss_mult * torch.sum(data_losses[:-1]) + \
         config.data_loss_mult * data_losses[-1]
     stats = {k: torch.tensor(stats[k], device=loss.device) for k in stats}
-    return loss, stats
+    return loss, stats  
 
+def compute_depth_smoothness_loss(renderings, config, geometry_warmup_ratio):
+    """Computes smoothness loss terms for depth outputs relating RGB edges."""
+    smoothness_losses = []
+
+    loss = lambda x: torch.mean(torch.abs(x))
+    bilateral_filter = lambda x: torch.exp(-torch.abs(x).mean(-1, keepdim=True))
+
+
+    for rendering in renderings:
+        depths = rendering['distance']
+
+        with torch.no_grad():
+            acc00 = rendering['acc'][...,:-1,:-1,:]
+            weights = rendering['rgb']
+
+        v00 = depths[...,:-1,:-1,:]
+        v01 = depths[...,:-1,1:,:]
+        v10 = depths[...,1:,:-1,:]
+
+        w01 = bilateral_filter(weights[...,:-1,:-1,:] - weights[...,:-1,1:,:])
+        w10 = bilateral_filter(weights[...,:-1,:-1,:] - weights[...,1:,:-1,:])
+        
+        L1 = loss(acc00 * w01 * (v00 - v01)**2)
+        L2 = loss(acc00 * w10 * (v00 - v10)**2)
+        smoothness_losses.append((L1 + L2) / 2)
+
+    smoothness_losses = torch.stack(smoothness_losses)
+
+    loss = geometry_warmup_ratio * \
+        (config.depth_smoothness_coarse_loss_mult * torch.sum(smoothness_losses[:-1]) + \
+        config.depth_smoothness_loss_mult * smoothness_losses[-1])
+    return loss
+    
+# def compute_depth_smoothness_loss(renderings, config, geometry_warmup_ratio):
+#     """Computes smoothness loss terms for depth outputs relating RGB edges."""
+#     smoothness_losses = []
+
+#     loss = lambda x: torch.mean(torch.abs(x))
+#     bilateral_filter = lambda x: torch.exp(-torch.abs(x).sum(-1, keepdim=True) * config.depth_smoothness_gamma)
+
+
+#     for rendering in renderings:
+#         inputs = rendering['distance']
+#         weights = rendering['rgb']
+
+#         w1 = bilateral_filter(weights[...,:,:-1,:] - weights[...,:,1:,:])
+#         w2 = bilateral_filter(weights[...,:-1,:,:] - weights[...,1:,:,:])
+#         w3 = bilateral_filter(weights[...,:-1,:-1,:] - weights[...,1:,1:,:])
+#         w4 = bilateral_filter(weights[...,1:,:-1,:] - weights[...,:-1,1:,:])
+        
+#         L1 = loss(w1 * (inputs[...,:,:-1,:] - inputs[...,:,1:,:]))
+#         L2 = loss(w2 * (inputs[...,:-1,:,:] - inputs[...,1:,:,:]))
+#         L3 = loss(w3 * (inputs[...,:-1,:-1,:] - inputs[...,:,1:,1:,:]))
+#         L4 = loss(w4 * (inputs[...,1:,:-1,:] - inputs[...,:-1,1:,:]))
+#         smoothness_losses.append((L1 + L2 + L3 + L4) / 4)
+
+#     smoothness_losses = torch.stack(smoothness_losses)
+
+#     loss = geometry_warmup_ratio * \
+#         (config.depth_smoothness_coarse_loss_mult * torch.sum(smoothness_losses[:-1]) + \
+#         config.depth_smoothness_loss_mult * smoothness_losses[-1])
+#     return loss
 
 def interlevel_loss(ray_history, config):
     """Computes the interlevel loss defined in mip-NeRF 360."""
@@ -102,7 +164,7 @@ def interlevel_loss(ray_history, config):
     return config.interlevel_loss_mult * loss_interlevel
 
 
-def orientation_loss(rays, model, ray_history, config):
+def orientation_loss(rays, model, ray_history, config, geometry_warmup_ratio):
     """Computes the orientation loss regularizer defined in ref-NeRF."""
     total_loss = 0.
     zero = torch.tensor(0.0, dtype=torch.float32, device=rays.viewdirs.device)
@@ -117,13 +179,13 @@ def orientation_loss(rays, model, ray_history, config):
         n_dot_v = (n * v[..., None, :]).sum(dim=-1)
         loss = torch.mean((w * torch.minimum(zero, n_dot_v)**2).sum(dim=-1))
         if i < model.num_levels - 1:
-            total_loss += config.orientation_coarse_loss_mult * loss
+            total_loss += geometry_warmup_ratio * config.orientation_coarse_loss_mult * loss
         else:
-            total_loss += config.orientation_loss_mult * loss
+            total_loss += geometry_warmup_ratio * config.orientation_loss_mult * loss
     return total_loss
 
 
-def predicted_normal_loss(model, ray_history, config):
+def predicted_normal_loss(model, ray_history, config, geometry_warmup_ratio):
     """Computes the predicted normal supervision loss defined in ref-NeRF."""
     total_loss = 0.
     for i, ray_results in enumerate(ray_history):
@@ -137,9 +199,9 @@ def predicted_normal_loss(model, ray_history, config):
         loss = torch.mean(
             (w * (1.0 - torch.sum(n * n_pred, dim=-1))).sum(dim=-1))
         if i < model.num_levels - 1:
-            total_loss += config.predicted_normal_coarse_loss_mult * loss
+            total_loss += geometry_warmup_ratio * config.predicted_normal_coarse_loss_mult * loss
         else:
-            total_loss += config.predicted_normal_loss_mult * loss
+            total_loss += geometry_warmup_ratio * config.predicted_normal_loss_mult * loss
     return total_loss
 
 
@@ -148,7 +210,7 @@ def noisy_consistency_loss(model, renderings, renderings_noise, config, warmup_r
     total_diffuse_loss = 0.
     total_specular_loss = 0.
     total_normal_loss = 0.
-    n_samples = config.sample_noise_size
+    n_samples = config.sample_noise_size // config.patch_size**2
     n_angles = config.sample_noise_angles
 
     for i, (rendering, rendering_noise) in enumerate(zip(renderings, renderings_noise)):

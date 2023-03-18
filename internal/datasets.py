@@ -194,8 +194,12 @@ class NeRFDataset(Dataset):
         super(NeRFDataset, self).__init__()
 
     def __len__(self):
-        # ( number of pixels / batch size ) * number of gpus
-        return (len(self.images)*self.images[0].shape[0]*self.images[0].shape[1]//self._batch_size)*self.config.num_gpus
+        if self.split == utils.DataSplit.TRAIN:
+            return (len(self.images)*self.images[0].shape[0]*self.images[0].shape[1]//self._batch_size)*self.config.num_gpus
+        elif self.split == utils.DataSplit.VAL:
+            return self._n_examples
+        else:
+            return self._n_examples
 
     def __getitem__(self, index):
         return next(self)
@@ -274,6 +278,7 @@ class BaseDataset(NeRFDataset, threading.Thread, metaclass=abc.ABCMeta):
         self._use_tiffs = config.use_tiffs
         self._load_disps = config.compute_disp_metrics
         self._load_normals = config.compute_normal_metrics
+        self._val_camera_idx = 0
         self._test_camera_idx = 0
         self._cast_rays_in_train_step = config.cast_rays_in_train_step
         self._render_spherical = False
@@ -333,6 +338,8 @@ class BaseDataset(NeRFDataset, threading.Thread, metaclass=abc.ABCMeta):
         # Seed the queue with one batch to avoid race condition.
         if self.split == utils.DataSplit.TRAIN:
             self._next_fn = self._next_train
+        elif self.split == utils.DataSplit.VAL:
+            self._next_fn = self._next_val
         else:
             self._next_fn = self._next_test
         # self._queue.put(self._next_fn())
@@ -490,15 +497,22 @@ class BaseDataset(NeRFDataset, threading.Thread, metaclass=abc.ABCMeta):
                 self.width, self.height)
             return self._make_ray_batch(pix_x_int, pix_y_int, cam_idx)
 
-    def _next_test(self) -> utils.Batch:
-        """Sample next test batch (one full image)."""
+    def _next_val(self) -> utils.Batch:
+        """Sample next val batch (one full image)."""
         # Use the next camera index.
         if self._debug_mode:
             cam_idx = 0
-            self._test_camera_idx = 0
+            self._val_camera_idx = 0
         else:
-            cam_idx = self._test_camera_idx
-            self._test_camera_idx = (self._test_camera_idx + 1) % self._n_examples
+            cam_idx = self._val_camera_idx
+            self._val_camera_idx = (self._val_camera_idx + 1) % self._n_examples
+        return self.generate_ray_batch(cam_idx)
+
+    def _next_test(self) -> utils.Batch:
+        """Sample next test batch (one full image)."""
+        # Use the next camera index.
+        cam_idx = self._test_camera_idx
+        self._test_camera_idx = (self._test_camera_idx + 1) % self._n_examples
         return self.generate_ray_batch(cam_idx)
 
 
@@ -668,6 +682,7 @@ class LLFF(BaseDataset):
         else:
             train_indices = all_indices % config.llffhold != 0
         split_indices = {
+            utils.DataSplit.VAL: all_indices[all_indices % config.llffhold == 0],
             utils.DataSplit.TEST: all_indices[all_indices % config.llffhold == 0],
             utils.DataSplit.TRAIN: train_indices,
         }
@@ -791,6 +806,7 @@ class RFFR(BaseDataset):
         else:
             train_indices = all_indices % config.llffhold != 0
         split_indices = {
+            utils.DataSplit.VAL: all_indices[all_indices % config.llffhold == 0],
             utils.DataSplit.TEST: all_indices[all_indices % config.llffhold == 0],
             utils.DataSplit.TRAIN: train_indices,
         }
@@ -912,6 +928,8 @@ class TanksAndTemplesFVS(BaseDataset):
             # Select the split.
             all_indices = np.arange(images.shape[0])
             indices = {
+                utils.DataSplit.VAL:
+                    all_indices[all_indices % config.llffhold == 0],
                 utils.DataSplit.TEST:
                     all_indices[all_indices % config.llffhold == 0],
                 utils.DataSplit.TRAIN:
@@ -995,6 +1013,7 @@ class DTU(BaseDataset):
 
         all_indices = np.arange(images.shape[0])
         split_indices = {
+            utils.DataSplit.VAL: all_indices[all_indices % config.dtuhold == 0],
             utils.DataSplit.TEST: all_indices[all_indices % config.dtuhold == 0],
             utils.DataSplit.TRAIN: all_indices[all_indices % config.dtuhold != 0],
         }

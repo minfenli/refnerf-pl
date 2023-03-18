@@ -120,6 +120,7 @@ class Batch:
 class DataSplit(enum.Enum):
     """Dataset split."""
     TRAIN = 'train'
+    VAL = 'val'
     TEST = 'test'
 
 

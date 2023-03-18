@@ -44,6 +44,7 @@ def sample_noisy_rays(rays: utils.Rays, rendering: dict,
                       warmup_ratio: float = 1.) -> utils.Rays:
     # sample noises for rotation matrices in x, y, z axis
     # (sample_noise_angles, 3)
+    
     xyz_angles = torch.zeros(sample_noise_angles * 3, device=rendering['distance'].device).uniform_(
         0, sample_angle_range/180 * np.pi * warmup_ratio).reshape(-1, 3)
     Ts = [euler_angles_to_matrix(xyz_angle) for xyz_angle in xyz_angles]

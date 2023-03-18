@@ -37,7 +37,7 @@ Config.accumulated_weights_loss_mult = 0.
 
 Config.srgb_mapping_when_rendering = True
 Config.srgb_mapping_type = 'norm_linear'
-config.supervised_by_linear_rgb = True
+Config.supervised_by_linear_rgb = True
 NerfMLP.srgb_mapping = False
 
 Model.num_levels = 2
