@@ -99,7 +99,7 @@ def compute_depth_smoothness_loss(renderings, config, geometry_warmup_ratio):
         depths = rendering['distance']
 
         with torch.no_grad():
-            acc00 = rendering['acc'][...,:-1,:-1,:]
+            acc00 = rendering['acc'][...,:-1,:-1,None]
             weights = rendering['rgb']
 
         v00 = depths[...,:-1,:-1,:]
@@ -108,7 +108,6 @@ def compute_depth_smoothness_loss(renderings, config, geometry_warmup_ratio):
 
         w01 = bilateral_filter(weights[...,:-1,:-1,:] - weights[...,:-1,1:,:])
         w10 = bilateral_filter(weights[...,:-1,:-1,:] - weights[...,1:,:-1,:])
-        
         L1 = loss(acc00 * w01 * (v00 - v01)**2)
         L2 = loss(acc00 * w10 * (v00 - v10)**2)
         smoothness_losses.append((L1 + L2) / 2)
@@ -190,6 +189,7 @@ def predicted_normal_loss(model, ray_history, config, geometry_warmup_ratio):
     total_loss = 0.
     for i, ray_results in enumerate(ray_history):
         w = ray_results['weights']
+        # with torch.no_grad():
         n = ray_results['normals']
         n_pred = ray_results['normals_pred']
         if n is None or n_pred is None:

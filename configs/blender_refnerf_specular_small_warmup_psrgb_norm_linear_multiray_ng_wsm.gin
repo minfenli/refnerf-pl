@@ -35,8 +35,8 @@ Config.consistency_specular_loss_mult = 3e-5
 Config.consistency_specular_coarse_loss_mult = 3e-6
 Config.consistency_warmup_steps = 0.5
 Config.sample_angle_range = 5
-Config.depth_smoothness_loss_mult = 1e-9
-Config.depth_smoothness_coarse_loss_mult = 1e-10
+Config.depth_smoothness_loss_mult = 3e-6
+Config.depth_smoothness_coarse_loss_mult = 3e-7
 Config.geometry_warmup_steps = 0.3
 
 Config.srgb_mapping_when_rendering = True
