@@ -17,7 +17,7 @@
 import torch
 from internal import stepfun
 from matplotlib import cm
-from internal import math
+from internal import math, image
 
 
 def weighted_percentile(x, weight, ps, assume_sorted=False):
@@ -178,14 +178,14 @@ def visualize_rays(dist,
     return vis, vis_alpha
 
 
-def visualize_suite(rendering, rays):
+def visualize_suite(rendering, rays, linear_to_srgb):
     """A wrapper around other visualizations for easy integration."""
 
     def depth_curve_fn(x):
         log_ = -torch.log(x + torch.finfo(torch.float32).eps)
         return log_.to(x.device)
-
-    rgb = rendering['rgb']
+    rgb = image.linear_to_srgb(rendering['rgb']) if linear_to_srgb \
+        else rendering['rgb']
     acc = rendering['acc']
 
     distance_mean = rendering['distance_mean']
@@ -272,11 +272,15 @@ def visualize_suite(rendering, rays):
     if 'roughness' in rendering:
         vis['roughness'] = matte(torch.tanh(rendering['roughness']), acc)
     if 'diffuse' in rendering:
-        vis['diffuse'] = rendering['diffuse']
-        vis['diffuse_matte'] = matte(rendering['diffuse'], acc)
+        diffuse_rgb = image.linear_to_srgb(rendering['diffuse']) if linear_to_srgb \
+            else rendering['diffuse']
+        vis['diffuse'] = diffuse_rgb
+        vis['diffuse_matte'] = matte(diffuse_rgb, acc)
     if 'specular' in rendering:
-        vis['specular'] = rendering['specular']
-        vis['specular_matte'] = matte(rendering['specular'], acc)
+        specular_rgb = image.linear_to_srgb(rendering['specular']) if linear_to_srgb \
+            else rendering['specular']
+        vis['specular'] = specular_rgb
+        vis['specular_matte'] = matte(specular_rgb, acc)
     if 'tint' in rendering:
         vis['tint'] = rendering['tint']
         vis['tint_matte'] = matte(rendering['tint'], acc)

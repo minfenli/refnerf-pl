@@ -272,7 +272,7 @@ class RefNeRFSystem(LightningModule):
             num_rays = np.prod(np.array(rays.directions.shape[:-1]))
             rays_per_sec = num_rays / eval_time
             self.summary_writer.add_scalar('val/rays_per_sec', rays_per_sec, self.global_step)
-            
+
             log = {}
 
             # Compute metrics.
@@ -284,7 +284,7 @@ class RefNeRFSystem(LightningModule):
             log = {'psnr': psnr}
 
             # Log images to tensorboard.
-            vis_suite = vis.visualize_suite(rendering, rays)
+            vis_suite = vis.visualize_suite(rendering, rays, self.config.supervised_by_linear_rgb)
             self.summary_writer.add_image(
                 'val/true_color', rgb, self.global_step, dataformats='HWC')
             if normals is not None:

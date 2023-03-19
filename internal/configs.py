@@ -109,6 +109,7 @@ class Config:
   srgb_mapping_type: str = 'linear'  # ['linear', 'srgb', 'norm_srgb'] Only be used when srgb_mapping_when_rendering
   supervised_by_linear_rgb: bool = False
   render_with_specular_density: bool = False
+  noise_background: bool = False
 
   depth_smoothness_loss_mult: float = 0.0
   depth_smoothness_coarse_loss_mult: float = 0.0
