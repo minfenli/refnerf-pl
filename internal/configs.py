@@ -113,8 +113,6 @@ class Config:
 
   depth_smoothness_loss_mult: float = 0.0
   depth_smoothness_coarse_loss_mult: float = 0.0
-  depth_smoothness_gamma: float = 10.
-  geometry_warmup_steps: float = 0.
 
   lr_init: float = 0.002  # The initial learning rate.
   lr_final: float = 0.00002  # The final learning rate.

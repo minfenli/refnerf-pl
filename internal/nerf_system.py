@@ -98,11 +98,6 @@ class RefNeRFSystem(LightningModule):
             consistency_warmup_ratio = min(1., self.global_step/(self.config.consistency_warmup_steps*self.config.max_steps))
         else:
             consistency_warmup_ratio = 1.
-        
-        if self.config.geometry_warmup_steps > 0.:
-            geometry_warmup_ratio = min(1., self.global_step/(self.config.geometry_warmup_steps*self.config.max_steps))
-        else:
-            geometry_warmup_ratio = 1.
 
         if self.config.sample_noise_size > 0 and (
            self.config.consistency_diffuse_coarse_loss_mult > 0 or
@@ -137,20 +132,20 @@ class RefNeRFSystem(LightningModule):
         if (self.config.orientation_coarse_loss_mult > 0 or
                 self.config.orientation_loss_mult > 0):
             losses['orientation'] = train_utils.orientation_loss(
-                rays, self.model, ray_history, self.config, geometry_warmup_ratio)
+                rays, self.model, ray_history, self.config)
 
         # calculate predicted normal loss
         if (self.config.predicted_normal_coarse_loss_mult > 0 or
                 self.config.predicted_normal_loss_mult > 0):
             losses['predicted_normals'] = train_utils.predicted_normal_loss(
-                self.model, ray_history, self.config, geometry_warmup_ratio)
+                self.model, ray_history, self.config)
         
         # calculate predicted normal loss
         if (self.config.patch_size > 1 and (
             self.config.depth_smoothness_coarse_loss_mult > 0 or
             self.config.depth_smoothness_loss_mult > 0)):
             losses['smoothness'] = train_utils.compute_depth_smoothness_loss(
-                    renderings, self.config, geometry_warmup_ratio)
+                    renderings, self.config)
 
         # calculate predicted consistency loss
         if self.config.sample_noise_size > 0 and (
@@ -276,7 +271,10 @@ class RefNeRFSystem(LightningModule):
             log = {}
 
             # Compute metrics.
-            metric = self.metric_harness(rendering['rgb'], torch.tensor(rgb, device=rendering['rgb'].device))
+            metric = self.metric_harness(image.linear_to_srgb(rendering['rgb']) \
+                                         if self.config.supervised_by_linear_rgb
+                                         else rendering['rgb'],
+                                         torch.tensor(rgb, device=rendering['rgb'].device))
             psnr = metric['psnr']
             if np.isnan(psnr):
                 psnr = 0.
