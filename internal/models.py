@@ -249,7 +249,7 @@ class Model(nn.Module):
             )[0]
             if self.config.render_with_specular_density:
                 if not 'specular_density' in ray_results.keys():
-                    ValueError('Specular density prediction from mlps should be enabled.')
+                    raise ValueError('Specular density prediction from mlps should be enabled.')
                 specular_weights = render.compute_alpha_weights(
                     ray_results['specular_density'],
                     tdist,
@@ -267,44 +267,25 @@ class Model(nn.Module):
                     self.bg_intensity_range[0] + self.bg_intensity_range[1]) / 2
 
             # Render each ray.
-            if not self.config.render_with_specular_density:
-                rendering = render.volumetric_rendering(
-                    ray_results['rgb'],
-                    weights,
-                    tdist,
-                    bg_rgbs,
-                    rays.far,
-                    compute_extras,
-                    extras={
-                        k: v
-                        for k, v in ray_results.items()
-                        if k.startswith('normals') or k in [
-                            'roughness', 'diffuse', 'specular', 'tint']
-                    },
-                    srgb_mapping=self.config.srgb_mapping_type \
-                        if self.config.srgb_mapping_when_rendering
-                        else 'none'
-                    )
-            else:
-                if not self.config.srgb_mapping_when_rendering:
-                    ValueError('Srgb mapping should be done during rendering when using specular density.')
-                rendering = render.volumetric_rendering(
-                    ray_results['diffuse'],
-                    weights,
-                    tdist,
-                    bg_rgbs,
-                    rays.far,
-                    compute_extras,
-                    extras={
-                        k: v
-                        for k, v in ray_results.items()
-                        if k.startswith('normals') or k in [
-                            'roughness', 'tint']
-                    },
-                    srgb_mapping=self.config.srgb_mapping_type,
-                    specular_rgbs=ray_results['specular'],
-                    specular_weights=specular_weights
-                    )
+            rendering = render.volumetric_rendering(
+                ray_results['rgb'],
+                ray_results['diffuse'],
+                ray_results['specular'],
+                weights,
+                tdist,
+                bg_rgbs,
+                rays.far,
+                compute_extras,
+                extras={
+                    k: v
+                    for k, v in ray_results.items()
+                    if k.startswith('normals') or k in [
+                        'roughness', 'tint']
+                },
+                srgb_mapping=self.config.srgb_mapping_type \
+                    if self.config.srgb_mapping_when_rendering
+                    else 'none'
+                )
 
             if compute_extras:
                 # Collect some rays to visualize directly. By naming these quantities
@@ -731,12 +712,16 @@ class MLP(nn.Module):
                     # rgb = torch.clip(
                     #     image.linear_to_srgb(specular_linear + diffuse_linear), 0.0, 1.0)
                     rgb = specular_linear + diffuse_linear
-                    with torch.no_grad():
-                        rgb_norm = torch.maximum(rgb.amax(axis=-1, keepdim=True), torch.ones_like(rgb[...,:1]))
+                    # with torch.no_grad():
+                    rgb_norm = torch.maximum(rgb.amax(axis=-1, keepdim=True), torch.ones_like(rgb[...,:1]))
                     rgb = rgb/rgb_norm
                     rgb = torch.clip(image.linear_to_srgb(rgb), 0.0, 1.0)
+                    diffuse = torch.clip(image.linear_to_srgb(diffuse_linear), 0.0, 1.0)
+                    specular = torch.clip(image.linear_to_srgb(specular_linear), 0.0, 1.0)
                 else:
                     rgb = specular_linear + diffuse_linear
+                    diffuse = diffuse_linear
+                    specular = specular_linear
             # Apply padding, mapping color to [-rgb_padding, 1+rgb_padding].
             rgb = rgb * (1 + 2 * self.rgb_padding) - self.rgb_padding
 
@@ -752,8 +737,8 @@ class MLP(nn.Module):
         if self.use_specular_tint:
             ray_results['tint'] = tint
         if self.use_diffuse_color:
-            ray_results['diffuse'] = diffuse_linear
-            ray_results['specular'] = specular_linear
+            ray_results['diffuse'] = diffuse
+            ray_results['specular'] = specular
             if self.enable_pred_specular_density:
                 ray_results['specular_density'] = specular_density
         if self.enable_pred_roughness:

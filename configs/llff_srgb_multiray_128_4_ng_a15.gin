@@ -1,13 +1,15 @@
-Config.dataset_loader = 'blender'
-Config.batching = 'single_image'
-Config.near = 2
-Config.far = 6
+Config.dataset_loader = 'llff'
+Config.batching = 'all_images'
+Config.near = 0.
+Config.far = 1.
+Config.factor = 4
+Config.forward_facing = True
 Config.eval_render_interval = 5
 Config.compute_normal_metrics = False
 Config.data_loss_type = 'mse'
 Config.distortion_loss_mult = 0.0
 Config.orientation_loss_mult = 0.1
-Config.orientation_loss_target = 'normals'
+Config.orientation_loss_target = 'normals_pred'
 Config.predicted_normal_loss_mult = 3e-4
 Config.orientation_coarse_loss_mult = 0.01
 Config.predicted_normal_coarse_loss_mult = 3e-5
@@ -33,12 +35,12 @@ Config.consistency_diffuse_coarse_loss_mult = 3e-6
 Config.consistency_specular_loss_mult = 3e-5
 Config.consistency_specular_coarse_loss_mult = 3e-6
 Config.consistency_warmup_steps = 0.5
-Config.sample_angle_range = 5
+Config.sample_angle_range = 15
 Config.accumulated_weights_loss_mult = 0.
 
 Config.srgb_mapping_when_rendering = True
 Config.srgb_mapping_type = 'norm_linear'
-Config.supervised_by_linear_rgb = True
+Config.supervised_by_linear_rgb = False
 NerfMLP.srgb_mapping = False
 
 Model.num_levels = 2

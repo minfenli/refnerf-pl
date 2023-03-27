@@ -216,7 +216,7 @@ def noisy_consistency_loss(model, renderings, renderings_noise, config, warmup_r
         # (n_samples, n_angles, ...)
         noise_diffuse_rgb = rendering_noise['diffuse'].reshape(n_samples, n_angles, *rendering_noise['diffuse'].shape[1:])
         noise_specular_rgb = rendering_noise['specular'].reshape(n_samples, n_angles, *rendering_noise['specular'].shape[1:])
-        
+
         if config.consistency_diffuse_loss_type == 'mse':
             # (n_samples, n_angles, ...)
             diffuse_mse = (rendering['diffuse'][:n_samples, None] - noise_diffuse_rgb)**2
@@ -272,10 +272,50 @@ def noisy_consistency_loss(model, renderings, renderings_noise, config, warmup_r
     return total_diffuse_loss, total_specular_loss, total_normal_loss
 
 
+def noisy_distance_consistency_loss(model, rays, noisy_rays, renderings, renderings_noise, config, warmup_ratio=1.):
+    """Computes the distance consistency loss."""
+    total_distance_loss = 0.
+    n_samples = config.sample_noise_size // config.patch_size**2
+    n_angles = config.sample_noise_angles
+
+    for i, (rendering, rendering_noise) in enumerate(zip(renderings, renderings_noise)):
+        # (n_samples, n_angles, ...)
+        
+        origins = rays.origins[:n_samples, None]
+        directions = rays.directions[:n_samples, None]
+        distance = rendering['distance'][:n_samples, None] 
+        origins_ = noisy_rays.origins.reshape(n_samples, n_angles, *noisy_rays.origins.shape[1:])
+        directions_ = noisy_rays.directions.reshape(n_samples, n_angles, *noisy_rays.directions.shape[1:])
+        distance_ = rendering_noise['distance'].reshape(n_samples, n_angles, *rendering_noise['distance'].shape[1:])
+        
+        if config.consistency_distance_loss_type == 'mse':
+            distance_mse = ((origins + directions * distance) - (origins_ + directions_ * distance_))**2
+            distance_loss = distance_mse.sum(axis=-1).mean()
+        if i < model.num_levels - 1:
+            total_distance_loss += warmup_ratio * config.consistency_distance_coarse_loss_mult * distance_loss
+        else:
+            total_distance_loss += warmup_ratio * config.consistency_distance_loss_mult * distance_loss
+    
+    return total_distance_loss
+
+
 def accumulated_weights_loss(renderings, config):
     """Computes accumulated_weights_loss to intrigue model output higher accs."""
     return config.accumulated_weights_loss_mult * \
         ((1-renderings[-1]['acc'])**2).mean()
+
+def weights_entropy_loss(model, renderings, ray_history, config, warmup_ratio):
+    """Computes entropy of weights."""
+    total_loss = 0.
+    for i, (rendering, ray_results) in enumerate(zip(renderings, ray_history)):
+        mask = rendering['acc'] > config.acc_threshold_for_weights_entropy_loss
+        w = ray_results['weights'][mask]
+        loss = (-w * (w+1e-10).log()).sum(axis=-1).mean()
+        if i < model.num_levels - 1:
+            total_loss += warmup_ratio * config.weights_entropy_coarse_loss_mult * loss
+        else:
+            total_loss += warmup_ratio * config.weights_entropy_loss_mult * loss
+    return total_loss
 
 
 def create_train_step(model: models.Model,

@@ -150,15 +150,15 @@ def compute_alpha_weights(density, tdist, dirs, opaque_background=False):
 
 
 def volumetric_rendering(rgbs,
+                         diffuse_rgbs,
+                         specular_rgbs,
                          weights,
                          tdist,
                          bg_rgbs,
                          t_far,
                          compute_extras,
                          extras=None,
-                         srgb_mapping='none',
-                         specular_rgbs=None,
-                         specular_weights=None):
+                         srgb_mapping='none'):
     """Volumetric Rendering Function.
 
     Args:
@@ -177,50 +177,50 @@ def volumetric_rendering(rgbs,
     eps = torch.tensor(torch.finfo(torch.float32).eps)
     rendering = {}
 
-    if not specular_rgbs is None and not specular_weights is None:
-        acc = weights.sum(dim=-1) + specular_weights.sum(dim=-1)
-        # The weight of the background.
-        bg_w = torch.maximum(torch.tensor(0), 1 - acc[..., None])
-        diffuse_rgb = (weights[..., None] * rgbs).sum(dim=-2)
-        specular_rgb = (specular_weights[..., None] * specular_rgbs).sum(dim=-2)
-        rgb = diffuse_rgb + specular_rgb + bg_w * bg_rgbs
-        rendering['diffuse'] = diffuse_rgb
-        rendering['specular'] = specular_rgb
-    else:
-        acc = weights.sum(dim=-1)
-        # The weight of the background.
-        bg_w = torch.maximum(torch.tensor(0), 1 - acc[..., None])
-        rgb = (weights[..., None] * rgbs).sum(dim=-2) + bg_w * bg_rgbs
-
+    acc = weights.sum(dim=-1)
+    # The weight of the background.
+    bg_w = torch.maximum(torch.tensor(0), 1 - acc[..., None])
+    rgb = (weights[..., None] * rgbs).sum(dim=-2) + bg_w * bg_rgbs
+    diffuse_rgb = (weights[..., None] * diffuse_rgbs).sum(dim=-2) + bg_w * bg_rgbs
+    specular_rgb = (weights[..., None] * specular_rgbs).sum(dim=-2) + bg_w * bg_rgbs
     if srgb_mapping=='none':
         rgb = rgb
+        diffuse_rgb = diffuse_rgb 
+        specular_rgb = specular_rgb
     elif srgb_mapping=='linear':
         # simple clip
         rgb = torch.clip(rgb, 0.0, 1.0)
+        diffuse_rgb = torch.clip(diffuse_rgb, 0.0, 1.0)
+        specular_rgb = torch.clip(specular_rgb, 0.0, 1.0)
     elif srgb_mapping=='norm_linear':
         # normalize up to 1 according to max(r,g,b)
-        with torch.no_grad():
-            rgb_norm = torch.maximum(rgb.amax(axis=-1, keepdim=True), torch.ones_like(rgb[...,:1]))
+        # with torch.no_grad():
+        rgb_norm = torch.maximum(rgb.amax(axis=-1, keepdim=True), torch.ones_like(rgb[...,:1]))
         rgb = rgb/rgb_norm
         rgb = torch.clip(rgb, 0.0, 1.0)
+        diffuse_rgb = torch.clip(diffuse_rgb, 0.0, 1.0)
+        specular_rgb = torch.clip(specular_rgb, 0.0, 1.0)
     elif srgb_mapping=='srgb':
         rgb = torch.clip(image.linear_to_srgb(rgb), 0.0, 1.0)
+        diffuse_rgb = torch.clip(image.linear_to_srgb(diffuse_rgb), 0.0, 1.0)
+        specular_rgb = torch.clip(image.linear_to_srgb(specular_rgb), 0.0, 1.0)
     elif srgb_mapping=='norm_srgb':
         # normalize up to 1 according to max(r,g,b)
-        with torch.no_grad():
-            rgb_norm = torch.maximum(rgb.amax(axis=-1, keepdim=True), torch.ones_like(rgb[...,:1]))
+        # with torch.no_grad():
+        rgb_norm = torch.maximum(rgb.amax(axis=-1, keepdim=True), torch.ones_like(rgb[...,:1]))
         rgb = rgb/rgb_norm
         rgb = torch.clip(image.linear_to_srgb(rgb), 0.0, 1.0)
+        diffuse_rgb = torch.clip(image.linear_to_srgb(diffuse_rgb), 0.0, 1.0)
+        specular_rgb = torch.clip(image.linear_to_srgb(specular_rgb), 0.0, 1.0)
     else:
-        ValueError('Mapping types are linear, srgb, norm_srgb')
+        raise ValueError('Mapping types are none, linear, norm_linear, srgb, norm_srgb')
     rendering['rgb'] = rgb
+    rendering['diffuse'] = diffuse_rgb
+    rendering['specular'] = specular_rgb
 
     t_mids = 0.5 * (tdist[..., :-1] + tdist[..., 1:])
     rendering['distance'] = (weights[..., None] * t_mids[..., None]).sum(dim=-2)
     rendering['acc'] = acc
-
-    if not specular_weights is None:
-        rendering['distance_specular'] = (specular_weights[..., None] * t_mids[..., None]).sum(dim=-2)
 
     if compute_extras:
         if extras is not None:

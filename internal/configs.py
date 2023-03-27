@@ -35,6 +35,7 @@ class Config:
   num_gpus: int = 1
   val_sample_num: int = 3
   sample_angle_range: float = 5 
+  n_input_views: int = 0
 
   dataset_loader: str = 'llff'  # The type of dataset loader to use.
   dataset_debug_mode: bool = False  # If True, always loads specific batch
@@ -113,6 +114,14 @@ class Config:
 
   depth_smoothness_loss_mult: float = 0.0
   depth_smoothness_coarse_loss_mult: float = 0.0
+
+  consistency_distance_loss_type: str = 'mse'
+  consistency_distance_loss_mult: float = 0.0
+  consistency_distance_coarse_loss_mult: float = 0.0
+  
+  weights_entropy_loss_mult: float = 0.0
+  weights_entropy_coarse_loss_mult: float = 0.0
+  acc_threshold_for_weights_entropy_loss: float = 0.0
 
   lr_init: float = 0.002  # The initial learning rate.
   lr_final: float = 0.00002  # The final learning rate.

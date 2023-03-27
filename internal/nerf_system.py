@@ -165,6 +165,14 @@ class RefNeRFSystem(LightningModule):
         if self.config.accumulated_weights_loss_mult > 0:
             losses['acc'] = train_utils.accumulated_weights_loss(renderings, self.config)
 
+        # calculate accumulated weights loss
+        if self.config.consistency_distance_loss_mult > 0 or self.config.consistency_distance_coarse_loss_mult > 0:
+            losses['distance_consistency'] = train_utils.noisy_distance_consistency_loss(self.model, rays, noisy_rays, renderings, renderings_noise, self.config, consistency_warmup_ratio)
+
+        # calculate accumulated weights loss
+        if self.config.weights_entropy_loss_mult > 0 or self.config.weights_entropy_coarse_loss_mult > 0:
+            losses['weights_entropy'] = train_utils.weights_entropy_loss(self.model, renderings, ray_history, self.config, consistency_warmup_ratio)
+
         # calculate total loss
         loss = torch.sum(torch.stack(list(losses.values())))
         self.stats['loss'] = loss.detach().cpu()

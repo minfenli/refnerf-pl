@@ -568,8 +568,13 @@ class Blender(BaseDataset):
 
         rgb, alpha = self.images[..., :3], self.images[..., -1:]
         self.images = rgb * alpha + (1. - alpha)  # Use a white background.
-        self.height, self.width = self.images.shape[1:3]
         self.camtoworlds = np.stack(cams, axis=0)
+
+        if self.split == utils.DataSplit.TRAIN and config.n_input_views > 0:
+            self.images = self.images[:config.n_input_views]
+            self.camtoworlds = self.camtoworlds[:config.n_input_views]
+
+        self.height, self.width = self.images.shape[1:3]
         self.focal = .5 * self.width / \
             np.tan(.5 * float(meta['camera_angle_x']))
         self.pixtocams = camera_utils.get_pixtocam(self.focal, self.width,
@@ -690,6 +695,12 @@ class LLFF(BaseDataset):
         # All per-image quantities must be re-indexed using the split indices.
         images = images[indices]
         poses = poses[indices]
+
+        if self.split == utils.DataSplit.TRAIN and config.n_input_views < images.shape[0]:
+            idx_sub = np.linspace(0, images.shape[0] - 1, config.n_input_views)
+            idx_sub = [round(i) for i in idx_sub]
+            images = images[idx_sub]
+            poses = poses[idx_sub]
 
         self.images = images
         self.camtoworlds = self.render_poses if config.render_path else poses
@@ -815,6 +826,12 @@ class RFFR(BaseDataset):
         images = images[indices]
         poses = poses[indices]
 
+        if self.split == utils.DataSplit.TRAIN and config.n_input_views < images.shape[0]:
+            idx_sub = np.linspace(0, images.shape[0] - 1, config.n_input_views)
+            idx_sub = [round(i) for i in idx_sub]
+            images = images[idx_sub]
+            poses = poses[idx_sub]
+
         self.images = images
         self.camtoworlds = self.render_poses if config.render_path else poses
         self.height, self.width = images.shape[1:3]
@@ -854,6 +871,11 @@ class TanksAndTemplesNerfPP(BaseDataset):
                 'rgb', lambda f: np.array(Image.open(f))) / 255.
             self.images = images
             self.height, self.width = self.images.shape[1:3]
+
+            if self.split == utils.DataSplit.TRAIN and config.n_input_views > 0:
+                self.images = self.images[:config.n_input_views]
+                poses = poses[:config.n_input_views]
+
 
         else:
             # Hack to grab the image resolution from a test image
@@ -935,6 +957,9 @@ class TanksAndTemplesFVS(BaseDataset):
                 utils.DataSplit.TRAIN:
                     all_indices[all_indices % config.llffhold != 0],
             }[self.split]
+
+            if self.split == utils.DataSplit.TRAIN and config.n_input_views > 0:
+                indices = indices[:config.n_input_views]
 
             self.images = self.images[indices]
             self.camtoworlds = self.camtoworlds[indices]
@@ -1018,6 +1043,9 @@ class DTU(BaseDataset):
             utils.DataSplit.TRAIN: all_indices[all_indices % config.dtuhold != 0],
         }
         indices = split_indices[self.split]
+
+        if self.split == utils.DataSplit.TRAIN and config.n_input_views > 0:
+            indices = indices[:config.n_input_views]
 
         self.images = images[indices]
         self.height, self.width = images.shape[1:3]
