@@ -488,8 +488,8 @@ class RefNeRFSystem(LightningModule):
             
             # move renderings to cpu.
             rendering = {k: v.cpu().double() for k, v in rendering.items() \
-                         if k in ['color', 'diffuse', 'specular', 'normals',\
-                                  'acc', 'distance_mean', 'distance_median']}
+                         if k in ['rgb', 'diffuse', 'specular', 'normals',\
+                                  'acc', 'distance_mean', 'distance_median', 'roughness']}
 
             save_fn(
                 utils.save_img_u8, rendering['rgb'], path_fn(f'color_{idx_str}.png'))
@@ -517,5 +517,5 @@ class RefNeRFSystem(LightningModule):
         num_files = len(glob.glob(path_fn('acc_*.tiff')))
         if num_files == dataset.size:
             print(
-                f'All files found, creating videos (job {config.render_job_id}).')
+                f'All files found, creating videos (job {self.config.render_job_id}).')
             vis.create_videos(self.config, base_dir, out_dir, out_name, dataset.size)
