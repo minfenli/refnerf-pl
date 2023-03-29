@@ -696,8 +696,9 @@ class LLFF(BaseDataset):
         images = images[indices]
         poses = poses[indices]
 
-        if self.split == utils.DataSplit.TRAIN and config.n_input_views < images.shape[0]:
-            idx_sub = np.linspace(0, images.shape[0] - 1, config.n_input_views)
+        if self.split == utils.DataSplit.TRAIN and config.n_input_views > 0:
+            n_input_views = min(config.n_input_views, images.shape[0])
+            idx_sub = np.linspace(0, images.shape[0] - 1, n_input_views)
             idx_sub = [round(i) for i in idx_sub]
             images = images[idx_sub]
             poses = poses[idx_sub]
