@@ -16,9 +16,12 @@
 
 import torch
 from internal import stepfun
+from internal import utils
 from matplotlib import cm
 from internal import math, image
-
+import os
+import numpy as np
+import mediapy as media
 
 def weighted_percentile(x, weight, ps, assume_sorted=False):
     """Compute the weighted percentile(s) of a single vector."""
@@ -287,3 +290,65 @@ def visualize_suite(rendering, rays, linear_to_srgb):
 
 
     return vis
+
+
+def create_videos(config, base_dir, out_dir, out_name, num_frames):
+    """Creates videos out of the images saved to disk."""
+    names = [n for n in config.checkpoint_dir.split('/') if n]
+    # Last two parts of checkpoint path are experiment name and scene name.
+    exp_name, scene_name = names[-2:]
+    video_prefix = f'{scene_name}_{exp_name}_{out_name}'
+
+    zpad = max(3, len(str(num_frames - 1)))
+
+    def idx_to_str(idx):
+        return str(idx).zfill(zpad)
+
+    utils.makedirs(base_dir)
+
+    # Load one example frame to get image shape and depth range.
+    depth_file = os.path.join(out_dir, f'distance_mean_{idx_to_str(0)}.tiff')
+    depth_frame = utils.load_img(depth_file)
+    shape = depth_frame.shape
+    p = config.render_dist_percentile
+    distance_limits = np.percentile(depth_frame.flatten(), [p, 100 - p])
+    lo, hi = [config.render_dist_curve_fn(x) for x in distance_limits]
+    print(f'Video shape is {shape[:2]}')
+
+    video_kwargs = {
+        'shape': shape[:2],
+        'codec': 'h264',
+        'fps': config.render_video_fps,
+        'crf': config.render_video_crf,
+    }
+
+    for k in ['color', 'diffuse', 'specular', 'normals', 'acc', 'distance_mean', 'distance_median']:
+        video_file = os.path.join(base_dir, f'{video_prefix}_{k}.mp4')
+        input_format = 'gray' if k == 'acc' else 'rgb'
+        file_ext = 'png' if k in ['color', 'normals'] else 'tiff'
+        idx = 0
+        file0 = os.path.join(out_dir, f'{k}_{idx_to_str(0)}.{file_ext}')
+        if not utils.file_exists(file0):
+            print(f'Images missing for tag {k}')
+            continue
+        print(f'Making video {video_file}...')
+        with media.VideoWriter(
+                video_file, **video_kwargs, input_format=input_format) as writer:
+            for idx in range(num_frames):
+                img_file = os.path.join(
+                    out_dir, f'{k}_{idx_to_str(idx)}.{file_ext}')
+                if not utils.file_exists(img_file):
+                    raise ValueError(f'Image file {img_file} does not exist.')
+                img = utils.load_img(img_file)
+                if k in ['color', 'normals']:
+                    img = img / 255.
+                elif k.startswith('distance'):
+                    img = config.render_dist_curve_fn(img)
+                    img = np.clip((img - np.minimum(lo, hi)) /
+                                  np.abs(hi - lo), 0, 1)
+                    img = cm.get_cmap('turbo')(img)[..., :3]
+
+                frame = (np.clip(np.nan_to_num(img), 0., 1.)
+                         * 255.).astype(np.uint8)
+                writer.add_image(frame)
+                idx += 1

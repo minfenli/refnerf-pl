@@ -19,6 +19,7 @@ from torch.utils.data import DataLoader
 
 import os
 import sys
+import glob
 
 TIME_PRECISION = 1000  # Internally represent integer times in milliseconds.
 
@@ -324,68 +325,32 @@ class RefNeRFSystem(LightningModule):
 
         out_dir = os.path.join(self.config.checkpoint_dir, 'ckpt', self.config.exp_name,
                            'path_renders' if self.config.render_path else 'test_preds')
+        
+        if self.config.eval_save_output and (not utils.isdir(out_dir)):
+            utils.makedirs(out_dir)
 
         def path_fn(x): return os.path.join(out_dir, x)
 
         self.path_fn = path_fn
 
     def on_test_end(self):
-        if not self.config.eval_only_once:
-            self.summary_writer.add_scalar(
-                'eval_median_render_time', np.median(self.render_times), self.global_step)
-            for name in self.metrics[0]:
-                scores = [m[name] for m in self.metrics]
-                self.summary_writer.add_scalar(
-                    'eval_metrics/' + name, np.mean(scores), self.global_step)
-                self.summary_writer.add_histogram(
-                    'eval_metrics/' + 'perimage_' + name, scores, self.global_step)
-            for name in self.metrics_cc[0]:
-                scores = [m[name] for m in self.metrics_cc]
-                self.summary_writer.add_scalar(
-                    'eval_metrics_cc/' + name, np.mean(scores), self.global_step)
-                self.summary_writer.add_histogram(
-                    'eval_metrics_cc/' + 'perimage_' + name, scores, self.global_step)
-
-            for i, r, b in self.showcases:
-                if self.config.vis_decimate > 1:
-                    d = self.config.vis_decimate
-
-                    def decimate_fn(x, d=d):
-                        return None if x is None else x[::d, ::d]
-                else:
-                    def decimate_fn(x): return x
-                r = decimate_fn(r)
-                b = decimate_fn(b)
-                visualizations = vis.visualize_suite(r, b.rays)
-                for k, v in visualizations.items():
-                    self.summary_writer.image(f'output_{k}_{i}', v, self.global_step)
-                if not self.config.render_path:
-                    target = b.rgb
-                    self.summary_writer.image(f'true_color_{i}', target, self.global_step)
-                    pred = visualizations['color']
-                    residual = np.clip(pred - target + 0.5, 0, 1)
-                    self.summary_writer.image(f'true_residual_{i}', residual, self.global_step)
-                    if self.config.compute_normal_metrics:
-                        self.summary_writer.image(f'true_normals_{i}', b.normals / 2. + 0.5,
-                                                self.global_step)
-
         if (self.config.eval_save_output and not self.config.render_path):
-            with utils.open_file(self.path_fn(f'render_times_{self.global_step}.txt'), 'w') as f:
+            with utils.open_file(self.path_fn(f'render_times.txt'), 'w') as f:
                 f.write(' '.join([str(r) for r in self.render_times]))
             for name in self.metrics[0]:
-                with utils.open_file(self.path_fn(f'metric_{name}_{self.global_step}.txt'), 'w') as f:
+                with utils.open_file(self.path_fn(f'metric_{name}.txt'), 'w') as f:
                     f.write(' '.join([str(m[name]) for m in self.metrics]))
             for name in self.metrics_cc[0]:
-                with utils.open_file(self.path_fn(f'metric_cc_{name}_{self.global_step}.txt'), 'w') as f:
+                with utils.open_file(self.path_fn(f'metric_cc_{name}.txt'), 'w') as f:
                     f.write(' '.join([str(m[name]) for m in self.metrics_cc]))
             if self.config.eval_save_ray_data:
                 for i, r, b in self.showcases:
                     rays = {k: v for k, v in r.items() if 'ray_' in k}
                     np.set_printoptions(threshold=sys.maxsize)
-                    with utils.open_file(self.path_fn(f'ray_data_{self.global_step}_{i}.txt'), 'w') as f:
+                    with utils.open_file(self.path_fn(f'ray_data_{i}.txt'), 'w') as f:
                         f.write(repr(rays))
             # import pdb; pdb.set_trace()
-            with utils.open_file(self.path_fn(f'avg_metrics_{self.global_step}.txt'), 'w') as f:
+            with utils.open_file(self.path_fn(f'avg_metrics.txt'), 'w') as f:
                 f.write(f'render_time: {np.mean(self.render_times)}\n')
                 for name in self.metrics[0]:
                     f.write(f'{name}: {np.mean([m[name] for m in self.metrics])}\n')
@@ -415,7 +380,6 @@ class RefNeRFSystem(LightningModule):
             # move renderings to cpu to allow for metrics calculations
             rendering = {k: v.cpu().double() for k, v in rendering.items() if not k.startswith('ray_')}
 
-            cc_start_time = time.time()
             rendering['rgb_cc'] = cc_fun(rendering['rgb'], gt_rgb)
             if not self.config.eval_only_once and batch_idx in self.showcase_indices:
                 showcase_idx = batch_idx if self.config.deterministic_showcase else len(
@@ -483,3 +447,75 @@ class RefNeRFSystem(LightningModule):
                     utils.save_img_f32(
                         rendering['acc'], self.path_fn(f'acc_{batch_idx:03d}.tiff'))
         return {}
+    
+    def render(self, dataset, base_dir, out_dir, out_name):
+        # Ensure sufficient zero-padding of image indices in output filenames.
+        self.model.eval()
+
+        zpad = max(3, len(str(dataset.size - 1)))
+
+        def path_fn(x):
+            return os.path.join(out_dir, x)
+
+        def idx_to_str(idx):
+            return str(idx).zfill(zpad)
+        
+        def save_fn(fn, *args, **kwargs):
+            fn(*args, **kwargs)
+
+        for idx in range(dataset.size):
+            if idx % self.config.render_num_jobs != self.config.render_job_id:
+                continue
+            # If current image and next image both already exist, skip ahead.
+            idx_str = idx_to_str(idx)
+            curr_file = path_fn(f'color_{idx_str}.png')
+            next_idx_str = idx_to_str(idx + self.config.render_num_jobs)
+            next_file = path_fn(f'color_{next_idx_str}.png')
+            if utils.file_exists(curr_file) and utils.file_exists(next_file):
+                print(f'Image {idx}/{dataset.size} already exists, skipping')
+                continue
+            print(f'Evaluating image {idx+1}/{dataset.size}')
+            eval_start_time = time.time()
+            batch = dataset.generate_ray_batch(idx)
+            train_frac = 1.
+
+            with torch.no_grad():
+                rendering = models.render_image(
+                    functools.partial(self.render_eval_fn, train_frac),
+                    batch.rays, self.config)
+                
+            print(f'Rendered in {(time.time() - eval_start_time):0.3f}s')
+            
+            # move renderings to cpu.
+            rendering = {k: v.cpu().double() for k, v in rendering.items() \
+                         if k in ['color', 'diffuse', 'specular', 'normals',\
+                                  'acc', 'distance_mean', 'distance_median']}
+
+            save_fn(
+                utils.save_img_u8, rendering['rgb'], path_fn(f'color_{idx_str}.png'))
+            save_fn(
+                utils.save_img_u8, rendering['diffuse'], path_fn(f'diffuse_{idx_str}.png'))
+            save_fn(
+                utils.save_img_u8, rendering['specular'], path_fn(f'specular_{idx_str}.png'))
+            if 'normals' in rendering:
+                save_fn(
+                    utils.save_img_u8, rendering['normals'] / 2. + 0.5,
+                    path_fn(f'normals_{idx_str}.png'))
+            save_fn(
+                utils.save_img_f32, rendering['distance_mean'],
+                path_fn(f'distance_mean_{idx_str}.tiff'))
+            save_fn(
+                utils.save_img_f32, rendering['distance_median'],
+                path_fn(f'distance_median_{idx_str}.tiff'))
+            save_fn(
+                utils.save_img_f32, rendering['acc'], path_fn(f'acc_{idx_str}.tiff'))
+            save_fn(
+                utils.save_img_u8, rendering['roughness'], path_fn(
+                    f'rho_{idx_str}.png'),
+                mask=rendering['acc'])
+        
+        num_files = len(glob.glob(path_fn('acc_*.tiff')))
+        if num_files == dataset.size:
+            print(
+                f'All files found, creating videos (job {config.render_job_id}).')
+            vis.create_videos(self.config, base_dir, out_dir, out_name, dataset.size)

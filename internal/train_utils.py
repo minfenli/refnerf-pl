@@ -225,7 +225,7 @@ def noisy_consistency_loss(model, renderings, renderings_noise, config, warmup_r
             # (n_samples, n_angles, ...)
             diffuse_mse = (rendering['diffuse'][:n_samples, None] - noise_diffuse_rgb.mean(axis=1, keepdim=True))**2
             diffuse_loss = diffuse_mse.sum(axis=-1).mean()
-        elif config.consistency_specular_loss_type == 'var':
+        elif config.consistency_diffuse_loss_type == 'var':
             diffuse_rays = torch.cat([rendering['diffuse'][:n_samples, None], noise_diffuse_rgb], axis=1)            
             diffuse_var = diffuse_rays.var(axis=1, keepdim=True).mean(axis=-1, keepdim=True)
             diffuse_loss = diffuse_var.sum(axis=-1).mean()

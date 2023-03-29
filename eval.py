@@ -38,8 +38,6 @@ from dataclasses import asdict
 
 # pytorch-lightning
 from pytorch_lightning import Trainer
-from pytorch_lightning.callbacks import ModelCheckpoint, TQDMProgressBar
-from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.plugins import DDPPlugin
 
 configs.define_common_flags()
