@@ -51,7 +51,6 @@ class Config:
   # If true, use all input images for training.
   llff_use_all_images_for_training: bool = False
   use_tiffs: bool = False  # If True, use 32-bit TIFFs. Used only by Blender.
-  compute_eval_metrics: bool = False  # If True, compute SSIM and PSNR
   compute_disp_metrics: bool = False  # If True, load and compute disparity MSE.
   compute_normal_metrics: bool = False  # If True, load and compute normal MAE.
   gc_every: int = 10000  # The number of steps between garbage collections.
@@ -107,7 +106,7 @@ class Config:
   accumulated_weights_loss_mult: float = 0.0
 
   srgb_mapping_when_rendering: bool = False
-  srgb_mapping_type: str = 'linear'  # ['linear', 'srgb', 'norm_srgb'] Only be used when srgb_mapping_when_rendering
+  srgb_mapping_type: str = 'linear'  # Only be used when srgb_mapping_when_rendering
   supervised_by_linear_rgb: bool = False
   render_with_specular_density: bool = False
   noise_background: bool = False
@@ -118,6 +117,8 @@ class Config:
   consistency_distance_loss_type: str = 'mse'
   consistency_distance_loss_mult: float = 0.0
   consistency_distance_coarse_loss_mult: float = 0.0
+
+  acc_threshold_for_consistency_loss: float = 0.0
   
   weights_entropy_loss_mult: float = 0.0
   weights_entropy_coarse_loss_mult: float = 0.0

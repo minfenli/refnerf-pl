@@ -379,6 +379,7 @@ class MLP(nn.Module):
             disable_density_normals: bool = False,
             disable_rgb: bool = False,
             srgb_mapping: bool = True,
+            srgb_mapping_normalization: bool = True,
             warp_fn: Callable[..., Any] = None,
             basis_shape: str = 'icosahedron',
             basis_subdivisions: int = 2,
@@ -462,6 +463,7 @@ class MLP(nn.Module):
         self.disable_density_normals = disable_density_normals
         self.disable_rgb = disable_rgb
         self.srgb_mapping = srgb_mapping
+        self.srgb_mapping_normalization = srgb_mapping_normalization
         self.warp_fn = warp_fn
         self.basis_shape = basis_shape
         self.basis_subdivisions = basis_subdivisions
@@ -713,8 +715,9 @@ class MLP(nn.Module):
                     #     image.linear_to_srgb(specular_linear + diffuse_linear), 0.0, 1.0)
                     rgb = specular_linear + diffuse_linear
                     # with torch.no_grad():
-                    rgb_norm = torch.maximum(rgb.amax(axis=-1, keepdim=True), torch.ones_like(rgb[...,:1]))
-                    rgb = rgb/rgb_norm
+                    if self.srgb_mapping_normalization:
+                        rgb_norm = torch.maximum(rgb.amax(axis=-1, keepdim=True), torch.ones_like(rgb[...,:1]))
+                        rgb = rgb/rgb_norm
                     rgb = torch.clip(image.linear_to_srgb(rgb), 0.0, 1.0)
                     diffuse = torch.clip(image.linear_to_srgb(diffuse_linear), 0.0, 1.0)
                     specular = torch.clip(image.linear_to_srgb(specular_linear), 0.0, 1.0)

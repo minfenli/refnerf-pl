@@ -216,30 +216,36 @@ def noisy_consistency_loss(model, renderings, renderings_noise, config, warmup_r
         # (n_samples, n_angles, ...)
         noise_diffuse_rgb = rendering_noise['diffuse'].reshape(n_samples, n_angles, *rendering_noise['diffuse'].shape[1:])
         noise_specular_rgb = rendering_noise['specular'].reshape(n_samples, n_angles, *rendering_noise['specular'].shape[1:])
+        
+        mask = rendering['acc'][:n_samples, None] > config.acc_threshold_for_consistency_loss
 
         if config.consistency_diffuse_loss_type == 'mse':
             # (n_samples, n_angles, ...)
             diffuse_mse = (rendering['diffuse'][:n_samples, None] - noise_diffuse_rgb)**2
-            diffuse_loss = diffuse_mse.sum(axis=-1).mean()
+            diffuse_mse = diffuse_mse.mean(axis=1, keepdim=True)
+            diffuse_loss = diffuse_mse.sum(axis=-1)[mask].mean()
         elif config.consistency_diffuse_loss_type == 'avg_mse':
             # (n_samples, n_angles, ...)
             diffuse_mse = (rendering['diffuse'][:n_samples, None] - noise_diffuse_rgb.mean(axis=1, keepdim=True))**2
-            diffuse_loss = diffuse_mse.sum(axis=-1).mean()
+            diffuse_mse = diffuse_mse.mean(axis=1, keepdim=True)
+            diffuse_loss = diffuse_mse.sum(axis=-1)[mask].mean()
         elif config.consistency_diffuse_loss_type == 'var':
             diffuse_rays = torch.cat([rendering['diffuse'][:n_samples, None], noise_diffuse_rgb], axis=1)            
             diffuse_var = diffuse_rays.var(axis=1, keepdim=True).mean(axis=-1, keepdim=True)
-            diffuse_loss = diffuse_var.sum(axis=-1).mean()
+            diffuse_loss = diffuse_var.sum(axis=-1)[mask].mean()
 
         if config.consistency_specular_loss_type == 'mse':
             specular_mse = (rendering['specular'][:n_samples, None] - noise_specular_rgb)**2
-            specular_loss = -specular_mse.sum(axis=-1).mean()
+            specular_mse = specular_mse.mean(axis=1, keepdim=True)
+            specular_loss = -specular_mse.sum(axis=-1)[mask].mean()
         elif config.consistency_specular_loss_type == 'avg_mse':
             specular_mse = (rendering['specular'][:n_samples, None] - noise_specular_rgb.mean(axis=1, keepdim=True))**2
-            specular_loss = -specular_mse.sum(axis=-1).mean()
+            specular_mse = specular_mse.mean(axis=1, keepdim=True)
+            specular_loss = -specular_mse.sum(axis=-1)[mask].mean()
         elif config.consistency_specular_loss_type == 'var':
             specular_rays = torch.cat([rendering['specular'][:n_samples, None], noise_specular_rgb], axis=1)            
             specular_var = specular_rays.var(axis=1, keepdim=True).mean(axis=-1, keepdim=True)
-            specular_loss = -specular_var.sum(axis=-1).mean()
+            specular_loss = -specular_var.sum(axis=-1)[mask].mean()
 
         n = rendering['normals'][:n_samples, None]
         n_pred = rendering['normals_pred'][:n_samples, None]
@@ -252,11 +258,9 @@ def noisy_consistency_loss(model, renderings, renderings_noise, config, warmup_r
                 'consistency loss is on.')
 
         if config.consistency_normal_loss_target == 'normals':                
-            normal_loss = torch.mean((1.0 - torch.sum(n * n_noise, dim=-1))) + \
-                torch.mean((1.0 - torch.sum(n * n_noise, dim=-1)))
+            normal_loss = (1.0 - torch.sum(n * n_noise, dim=-1)).mean(axis=1, keepdim=True)[mask].mean()
         elif config.consistency_normal_loss_target == 'normals_pred': 
-            normal_loss = torch.mean((1.0 - torch.sum(n * n_noise, dim=-1))) + \
-                torch.mean((1.0 - torch.sum(n_pred * n_pred_noise, dim=-1)))   
+            normal_loss = (1.0 - torch.sum(n_pred * n_pred_noise, dim=-1)).mean(axis=1, keepdim=True)[mask].mean()
         else:
             raise ValueError(
                 'Given an unknown type of consistency_normal_loss_target.')
@@ -288,9 +292,12 @@ def noisy_distance_consistency_loss(model, rays, noisy_rays, renderings, renderi
         directions_ = noisy_rays.directions.reshape(n_samples, n_angles, *noisy_rays.directions.shape[1:])
         distance_ = rendering_noise['distance'].reshape(n_samples, n_angles, *rendering_noise['distance'].shape[1:])
         
+        mask = rendering['acc'][:n_samples, None] > config.acc_threshold_for_consistency_loss
+
         if config.consistency_distance_loss_type == 'mse':
             distance_mse = ((origins + directions * distance) - (origins_ + directions_ * distance_))**2
-            distance_loss = distance_mse.sum(axis=-1).mean()
+            distance_mse = distance_mse.mean(axis=1, keepdim=True)
+            distance_loss = distance_mse.sum(axis=-1)[mask].mean()
         if i < model.num_levels - 1:
             total_distance_loss += warmup_ratio * config.consistency_distance_coarse_loss_mult * distance_loss
         else:

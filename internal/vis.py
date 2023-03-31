@@ -322,10 +322,10 @@ def create_videos(config, base_dir, out_dir, out_name, num_frames):
         'crf': config.render_video_crf,
     }
 
-    for k in ['color', 'diffuse', 'specular', 'normals', 'acc', 'distance_mean', 'distance_median']:
+    for k in ['color', 'diffuse', 'specular', 'normals_pred', 'acc', 'distance_mean', 'distance_median']:
         video_file = os.path.join(base_dir, f'{video_prefix}_{k}.mp4')
         input_format = 'gray' if k == 'acc' else 'rgb'
-        file_ext = 'png' if k in ['color', 'normals'] else 'tiff'
+        file_ext = 'png' if k in ['color', 'diffuse', 'specular', 'normals_pred'] else 'tiff'
         idx = 0
         file0 = os.path.join(out_dir, f'{k}_{idx_to_str(0)}.{file_ext}')
         if not utils.file_exists(file0):
@@ -340,7 +340,7 @@ def create_videos(config, base_dir, out_dir, out_name, num_frames):
                 if not utils.file_exists(img_file):
                     raise ValueError(f'Image file {img_file} does not exist.')
                 img = utils.load_img(img_file)
-                if k in ['color', 'normals']:
+                if k in ['color', 'diffuse', 'specular', 'normals_pred']:
                     img = img / 255.
                 elif k.startswith('distance'):
                     img = config.render_dist_curve_fn(img)

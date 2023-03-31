@@ -54,10 +54,10 @@ class RefNeRFSystem(LightningModule):
                           collate_fn=lambda x : x[0])
 
     def val_dataloader(self):
-        # must give 1 worker
+        # must give 1 worker (bug, but keep unchanged for comparing old results)
         return DataLoader(self.val_dataset,
                           shuffle=False,
-                          num_workers=self.config.num_workers,
+                          num_workers=self.config.num_workers, # here
                           batch_size=1,
                           pin_memory=True,
                           collate_fn=lambda x : x[0])
@@ -66,7 +66,7 @@ class RefNeRFSystem(LightningModule):
         # must give 1 worker
         return DataLoader(self.val_dataset,
                           shuffle=False,
-                          num_workers=self.config.num_workers,
+                          num_workers=1,
                           batch_size=1,
                           pin_memory=True,
                           collate_fn=lambda x : x[0])
@@ -417,7 +417,7 @@ class RefNeRFSystem(LightningModule):
                 if self.config.compute_normal_metrics:
                     weights = rendering['acc'] * batch.alphas
                     normalized_normals_gt = ref_utils.l2_normalize(
-                        batch.normals)
+                        torch.tensor(batch.normals, device=rendering['acc'].device))
                     for key, val in rendering.items():
                         if key.startswith('normals') and val is not None:
                             normalized_normals = ref_utils.l2_normalize(val)
@@ -439,7 +439,7 @@ class RefNeRFSystem(LightningModule):
                             utils.save_img_f32(rendering[key],
                                                 self.path_fn(f'{key}_{batch_idx:03d}.tiff'))
 
-                    for key in ['normals']:
+                    for key in ['normals_pred']:
                         if key in rendering:
                             utils.save_img_u8(rendering[key] / 2. + 0.5,
                                                 self.path_fn(f'{key}_{batch_idx:03d}.png'))
@@ -488,7 +488,7 @@ class RefNeRFSystem(LightningModule):
             
             # move renderings to cpu.
             rendering = {k: v.cpu().double() for k, v in rendering.items() \
-                         if k in ['rgb', 'diffuse', 'specular', 'normals',\
+                         if k in ['rgb', 'diffuse', 'specular', 'normals_pred',\
                                   'acc', 'distance_mean', 'distance_median', 'roughness']}
 
             save_fn(
@@ -497,10 +497,10 @@ class RefNeRFSystem(LightningModule):
                 utils.save_img_u8, rendering['diffuse'], path_fn(f'diffuse_{idx_str}.png'))
             save_fn(
                 utils.save_img_u8, rendering['specular'], path_fn(f'specular_{idx_str}.png'))
-            if 'normals' in rendering:
+            if 'normals_pred' in rendering:
                 save_fn(
-                    utils.save_img_u8, rendering['normals'] / 2. + 0.5,
-                    path_fn(f'normals_{idx_str}.png'))
+                    utils.save_img_u8, rendering['normals_pred'] / 2. + 0.5,
+                    path_fn(f'normals_pred_{idx_str}.png'))
             save_fn(
                 utils.save_img_f32, rendering['distance_mean'],
                 path_fn(f'distance_mean_{idx_str}.tiff'))
