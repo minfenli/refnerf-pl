@@ -4,6 +4,7 @@ Pillow
 tensorboard
 gin-config
 dm_pix
+lpips
 rawpy
 mediapy
 flatdict

@@ -314,6 +314,8 @@ class RefNeRFSystem(LightningModule):
         pass
 
     def on_test_start(self):
+        self.metric_harness = image.MetricHarness(compute_lpips=True)
+
         num_eval = min(self.val_dataset.size, self.config.eval_dataset_limit)
         perm = torch.randperm(num_eval)
         self.showcase_indices = torch.sort(perm[:self.config.num_showcase_images])
@@ -373,14 +375,15 @@ class RefNeRFSystem(LightningModule):
 
             self.render_times.append((time.time() - eval_start_time))
 
+            # Cast to 64-bit
+            rendering = {k: v.double() for k, v in rendering.items() if not k.startswith('ray_')}
+
             # Cast to 64-bit to ensure high precision for color correction function.
             gt_rgb = torch.tensor(
-                batch.rgb, dtype=torch.float64, device=torch.device('cpu'))
-
-            # move renderings to cpu to allow for metrics calculations
-            rendering = {k: v.cpu().double() for k, v in rendering.items() if not k.startswith('ray_')}
+                batch.rgb, dtype=torch.float64, device=rendering['rgb'].device)
 
             rendering['rgb_cc'] = cc_fun(rendering['rgb'], gt_rgb)
+
             if not self.config.eval_only_once and batch_idx in self.showcase_indices:
                 showcase_idx = batch_idx if self.config.deterministic_showcase else len(
                     self.showcases)
@@ -392,8 +395,8 @@ class RefNeRFSystem(LightningModule):
 
                 if self.config.eval_quantize_metrics:
                     # Ensures that the images written to disk reproduce the metrics.
-                    rgb = np.round(rgb * 255) / 255
-                    rgb_cc = np.round(rgb_cc * 255) / 255
+                    rgb = torch.round(rgb * 255) / 255
+                    rgb_cc = torch.round(rgb_cc * 255) / 255
 
                 if self.config.eval_crop_borders > 0:
                     def crop_fn(
@@ -429,23 +432,23 @@ class RefNeRFSystem(LightningModule):
 
             if self.config.eval_save_output and (self.config.eval_render_interval > 0):
                 if (batch_idx % self.config.eval_render_interval) == 0:
-                    utils.save_img_u8(rendering['rgb'],
+                    utils.save_img_u8(rendering['rgb'].cpu(),
                                         self.path_fn(f'color_{batch_idx:03d}.png'))
-                    utils.save_img_u8(rendering['rgb_cc'],
+                    utils.save_img_u8(rendering['rgb_cc'].cpu(),
                                         self.path_fn(f'color_cc_{batch_idx:03d}.png'))
 
                     for key in ['distance_mean', 'distance_median']:
                         if key in rendering:
-                            utils.save_img_f32(rendering[key],
+                            utils.save_img_f32(rendering[key].cpu(),
                                                 self.path_fn(f'{key}_{batch_idx:03d}.tiff'))
 
                     for key in ['normals_pred']:
                         if key in rendering:
-                            utils.save_img_u8(rendering[key] / 2. + 0.5,
+                            utils.save_img_u8(rendering[key].cpu() / 2. + 0.5,
                                                 self.path_fn(f'{key}_{batch_idx:03d}.png'))
 
                     utils.save_img_f32(
-                        rendering['acc'], self.path_fn(f'acc_{batch_idx:03d}.tiff'))
+                        rendering['acc'].cpu(), self.path_fn(f'acc_{batch_idx:03d}.tiff'))
         return {}
     
     def render(self, dataset, base_dir, out_dir, out_name):

@@ -19,6 +19,7 @@ from typing import Optional, Union
 import torch
 
 import dm_pix
+from lpips import LPIPS
 import numpy as np
 from numpy import array as tensor
 
@@ -129,15 +130,27 @@ def color_correct(img, ref, num_iters=5, eps=0.5 / 255):
 class MetricHarness:
   """A helper class for evaluating several error metrics."""
 
-  def __init__(self):
+  def __init__(self, compute_lpips=False):
     self.ssim_fn = dm_pix.ssim
+    self.compute_lpips = compute_lpips
+    if self.compute_lpips:
+      self.lpips_fn = LPIPS(net="vgg").cuda()
+
 
   def __call__(self, rgb_pred, rgb_gt, name_fn=lambda s: s):
     """Evaluate the error between a predicted rgb image and the true image."""
     psnr = float(mse_to_psnr(((rgb_pred - rgb_gt)**2).mean()))
     ssim = float(self.ssim_fn(rgb_pred.cpu().numpy(), rgb_gt.cpu().numpy()))
 
-    return {
+    if self.compute_lpips:
+      lpips = self.lpips_fn(rgb_pred.float().permute(2, 0, 1), rgb_gt.float().permute(2, 0, 1)).item()
+      return {
         name_fn('psnr'): psnr,
         name_fn('ssim'): ssim,
+        name_fn('lpips'): lpips,
+      }
+    
+    return {
+      name_fn('psnr'): psnr,
+      name_fn('ssim'): ssim
     }
