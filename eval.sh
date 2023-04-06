@@ -13,7 +13,7 @@ DISP_METRICS=True
 NORMAL_METRICS=True
 
 python3 eval.py \
-  --gin_configs="${DIR}/exps/logs/${EXP}_${NAME}/config.gin" \
+  --gin_configs="${DIR}/exps/logs/${EXP}/${EXP}_${NAME}/config.gin" \
   --gin_bindings="Config.data_dir = '${DATA_DIR}'" \
   --gin_bindings="Config.checkpoint_dir = '${DIR}/exps'" \
   --gin_bindings="Config.render_chunk_size = $RENDER_CHUNK_SIZE" \

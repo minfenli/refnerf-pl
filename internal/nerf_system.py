@@ -54,10 +54,10 @@ class RefNeRFSystem(LightningModule):
                           collate_fn=lambda x : x[0])
 
     def val_dataloader(self):
-        # must give 1 worker (bug, but keep unchanged for comparing old results)
+        # must give 1 worker
         return DataLoader(self.val_dataset,
                           shuffle=False,
-                          num_workers=self.config.num_workers, # here
+                          num_workers=1,
                           batch_size=1,
                           pin_memory=True,
                           collate_fn=lambda x : x[0])
@@ -93,12 +93,25 @@ class RefNeRFSystem(LightningModule):
                 self.config.compute_disp_metrics or 
                 self.config.compute_normal_metrics or 
                 self.config.sample_noise_size > 0)
+        
+        if self.config.consistency_warmup_steps > self.config.consistency_decay_steps:
+            raise ValueError("Consistency loss decay should be after whole warmup.")
+
 
         # calculate warmup ratio
-        if self.config.consistency_warmup_steps > 0.:
+        if self.config.consistency_warmup_steps > 0. and\
+            self.config.consistency_warmup_steps <= 1.:
             consistency_warmup_ratio = min(1., self.global_step/(self.config.consistency_warmup_steps*self.config.max_steps))
         else:
             consistency_warmup_ratio = 1.
+
+        # calculate decay ratio
+        if self.config.consistency_decay_steps > 0. and \
+            self.config.consistency_decay_steps <= 1. and \
+            self.global_step >= self.config.consistency_decay_steps*self.config.max_steps:
+            steps_left = self.config.max_steps-self.global_step
+            total_decay_steps = self.config.max_steps - self.config.consistency_decay_steps*self.config.max_steps
+            consistency_warmup_ratio = max(0., steps_left/total_decay_steps)
 
         if self.config.sample_noise_size > 0 and (
            self.config.consistency_diffuse_coarse_loss_mult > 0 or

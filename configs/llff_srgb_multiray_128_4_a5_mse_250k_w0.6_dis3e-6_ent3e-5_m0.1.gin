@@ -23,6 +23,36 @@ Config.batch_size = 1024
 Config.render_chunk_size = 4096
 Config.max_steps = 250000
 
+Config.sample_noise_size = 128
+Config.sample_noise_angles = 4
+Config.consistency_diffuse_loss_type = 'mse'
+Config.consistency_specular_loss_type = 'var'
+Config.consistency_normal_loss_target = 'normals'
+Config.consistency_normal_loss_mult = 3e-5
+Config.consistency_normal_coarse_loss_mult = 3e-6
+Config.consistency_diffuse_loss_mult = 3e-5
+Config.consistency_diffuse_coarse_loss_mult = 3e-6
+Config.consistency_specular_loss_mult = 3e-5
+Config.consistency_specular_coarse_loss_mult = 3e-6
+Config.consistency_warmup_steps = 0.6
+Config.sample_angle_range = 5
+Config.accumulated_weights_loss_mult = 0.
+
+Config.consistency_distance_loss_mult = 3e-6
+Config.consistency_distance_coarse_loss_mult = 3e-7
+
+Config.acc_threshold_for_consistency_loss = 0.1
+
+Config.weights_entropy_loss_mult = 3e-5
+Config.weights_entropy_coarse_loss_mult = 3e-6
+
+Config.acc_threshold_for_weights_entropy_loss = 0.1
+
+Config.srgb_mapping_when_rendering = True
+Config.srgb_mapping_type = 'norm_linear'
+Config.supervised_by_linear_rgb = False
+NerfMLP.srgb_mapping = False
+
 Model.num_levels = 2
 Model.single_mlp = True
 Model.num_prop_samples = 128  # This needs to be set despite single_mlp = True.

@@ -748,7 +748,7 @@ class RFFR(BaseDataset):
 
         # Load images.
         colmap_image_dir = os.path.join(self.data_dir, 'images')
-        image_dir = os.path.join(self.data_dir, 'images' + image_dir_suffix)
+        image_dir = os.path.join(self.data_dir, 'images')
         for d in [image_dir, colmap_image_dir]:
             if not utils.file_exists(d):
                 raise ValueError(f'Image folder {d} does not exist.')
@@ -822,12 +822,14 @@ class RFFR(BaseDataset):
             utils.DataSplit.TEST: all_indices[all_indices % config.llffhold == 0],
             utils.DataSplit.TRAIN: train_indices,
         }
+        print(self.split)
         indices = split_indices[self.split]
+        print(len(images))
         # All per-image quantities must be re-indexed using the split indices.
         images = images[indices]
         poses = poses[indices]
 
-        if self.split == utils.DataSplit.TRAIN and config.n_input_views < images.shape[0]:
+        if self.split == utils.DataSplit.TRAIN and config.n_input_views > 0 and config.n_input_views < images.shape[0]:
             idx_sub = np.linspace(0, images.shape[0] - 1, config.n_input_views)
             idx_sub = [round(i) for i in idx_sub]
             images = images[idx_sub]
@@ -836,6 +838,7 @@ class RFFR(BaseDataset):
         self.images = images
         self.camtoworlds = self.render_poses if config.render_path else poses
         self.height, self.width = images.shape[1:3]
+        print(len(self.images))
 
 
 class TanksAndTemplesNerfPP(BaseDataset):

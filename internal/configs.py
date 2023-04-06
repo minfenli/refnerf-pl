@@ -94,6 +94,7 @@ class Config:
   sample_noise_size: int = 128  # The number of rays/pixels for noise sampling in each batch.
   sample_noise_angles: int = 1  # The number of new angles of views per noise sampling.
   consistency_warmup_steps: float = 0.
+  consistency_decay_steps: float = 1.
   consistency_normal_loss_mult: float = 0.0
   consistency_normal_coarse_loss_mult: float = 0.0
   consistency_normal_loss_target: str = 'normals_pred'
@@ -119,7 +120,7 @@ class Config:
   consistency_distance_coarse_loss_mult: float = 0.0
 
   acc_threshold_for_consistency_loss: float = 0.0
-  
+
   weights_entropy_loss_mult: float = 0.0
   weights_entropy_coarse_loss_mult: float = 0.0
   acc_threshold_for_weights_entropy_loss: float = 0.0
@@ -184,7 +185,9 @@ def load_config(save_config=True):
       flags.FLAGS.gin_configs, flags.FLAGS.gin_bindings, skip_unknown=True)
   config = Config()
   if save_config:
-    dir = os.path.join(config.checkpoint_dir, 'logs', config.exp_name)
+    dir = os.path.join(config.checkpoint_dir, 'logs', 
+                       config.exp_name.split('_')[0], 
+                       config.exp_name)
     utils.makedirs(dir)
     with utils.open_file(dir + '/config.gin', 'w') as f:
       f.write(gin.config_str())

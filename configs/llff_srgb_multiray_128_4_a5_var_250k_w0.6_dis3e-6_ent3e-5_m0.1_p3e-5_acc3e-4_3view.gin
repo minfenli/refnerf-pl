@@ -1,5 +1,6 @@
 Config.dataset_loader = 'llff'
 Config.batching = 'all_images'
+Config.n_input_views = 3
 Config.near = 0.
 Config.far = 1.
 Config.factor = 4
@@ -10,9 +11,9 @@ Config.data_loss_type = 'mse'
 Config.distortion_loss_mult = 0.0
 Config.orientation_loss_mult = 0.1
 Config.orientation_loss_target = 'normals_pred'
-Config.predicted_normal_loss_mult = 3e-4
+Config.predicted_normal_loss_mult = 3e-5
 Config.orientation_coarse_loss_mult = 0.01
-Config.predicted_normal_coarse_loss_mult = 3e-5
+Config.predicted_normal_coarse_loss_mult = 3e-6
 Config.interlevel_loss_mult = 0.0
 Config.data_coarse_loss_mult = 0.1
 Config.data_loss_mult = 1.0
@@ -21,7 +22,8 @@ Config.adam_beta2 = 0.999
 Config.adam_eps = 1e-6
 Config.batch_size = 1024
 Config.render_chunk_size = 4096
-Config.max_steps = 300000
+Config.max_steps = 250000
+Config.checkpoint_every = 1.
 
 Config.sample_noise_size = 128
 Config.sample_noise_angles = 4
@@ -34,9 +36,9 @@ Config.consistency_diffuse_loss_mult = 3e-5
 Config.consistency_diffuse_coarse_loss_mult = 3e-6
 Config.consistency_specular_loss_mult = 3e-5
 Config.consistency_specular_coarse_loss_mult = 3e-6
-Config.consistency_warmup_steps = 0.5
+Config.consistency_warmup_steps = 0.6
 Config.sample_angle_range = 5
-Config.accumulated_weights_loss_mult = 0.
+Config.accumulated_weights_loss_mult = 3e-4
 
 Config.consistency_distance_loss_mult = 3e-6
 Config.consistency_distance_coarse_loss_mult = 3e-7
@@ -45,6 +47,7 @@ Config.acc_threshold_for_consistency_loss = 0.1
 
 Config.weights_entropy_loss_mult = 3e-5
 Config.weights_entropy_coarse_loss_mult = 3e-6
+
 Config.acc_threshold_for_weights_entropy_loss = 0.1
 
 Config.srgb_mapping_when_rendering = True

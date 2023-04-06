@@ -52,11 +52,17 @@ def main(unused_argv):
     # set random seeds for reproducibility
     setup_seed(config.seed)
 
-    summary_writer = SummaryWriter(os.path.join(config.checkpoint_dir, 'logs', config.exp_name))
+    summary_writer = SummaryWriter(os.path.join(config.checkpoint_dir, 
+                                                'logs', 
+                                                config.exp_name.split('_')[0], 
+                                                config.exp_name))
 
     system = RefNeRFSystem(hparams, config, summary_writer)
 
-    ckpt_cb = ModelCheckpoint(dirpath=os.path.join(config.checkpoint_dir, 'ckpt', config.exp_name),
+    ckpt_cb = ModelCheckpoint(dirpath=os.path.join(config.checkpoint_dir, 
+                                                   'ckpt', 
+                                                   config.exp_name.split('_')[0],
+                                                   config.exp_name),
                               save_last=True,
                               monitor='val/psnr',
                               mode='max',
