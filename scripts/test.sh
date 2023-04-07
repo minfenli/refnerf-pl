@@ -1,0 +1,1 @@
+python -m train --gin_configs ./configs/blender_refnerf.gin --gin_bindings "Config.data_dir = '/media/public_dataset/NeRF/nerf_synthetic/lego'" --gin_bindings="Config.checkpoint_dir = './data/checkpoints'" --logtostderr
