@@ -2,14 +2,6 @@
 
 This is an implementation of [Ref-NeRF](https://dorverbin.github.io/refnerf/), which is extented from [refnerf-pytorch](https://github.com/gkouros/refnerf-pytorch) based on the original [jax code](https://github.com/google-research/multinerf) released by Google.
 
-This repository contains the code release for the CVPR2022 Ref-NeRF paper:
-[Ref-NeRF](https://dorverbin.github.io/refnerf/)
-This codebase was adapted from the [multinerf](https://github.com/google/multinerf)
-code release that combines the mip-NeRF-360, Raw-NeRF, Ref-NeRF papers from CVPR 2022.
-The original release for Ref-NeRF differs from the Google's internal codebase that was
-used for the paper and since it's a port from [JAX](https://github.com/google/jax)
-to [PyTorch](https://github.com/pytorch/pytorch) the results might be different.
-
 ## Setup
 
 ```
