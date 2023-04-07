@@ -5,7 +5,7 @@ NAME=$2
 CONFIG=$3
 DATA_DIR=/media/public_dataset/NeRF/nerf_synthetic/$1
 
-DIR=/media/NFS/fong/refnerf-pytorch-pl
+DIR=/media/NFS/fong/refnerf-pl
 cd ${DIR}
 
 MAX_STEPS=250000

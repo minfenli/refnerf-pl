@@ -4,7 +4,7 @@ EXP=$1
 NAME=$2
 DATA_DIR=/media/public_dataset/NeRF/nerf_synthetic/$1
 
-DIR=/media/NFS/fong/refnerf-pytorch-pl
+DIR=/media/NFS/fong/refnerf-pl
 cd ${DIR}
 
 DEG_VIEW=5

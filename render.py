@@ -64,9 +64,13 @@ def main(unused_argv):
     np.random.seed(20221019)
 
 
+
     # Load states from checkpoint.
     if utils.isdir(config.checkpoint_dir):    
-        files = sorted([f for f in os.listdir(os.path.join(config.checkpoint_dir, 'ckpt', config.exp_name))
+        files = sorted([f for f in os.listdir(os.path.join(config.checkpoint_dir, 
+                                                           'ckpt', 
+                                                           config.exp_name.split('_')[0],
+                                                           config.exp_name))
                         if f.endswith('.ckpt')], key=lambda x: 1e10 if x.split('=')[-1][:-5]=='last'\
                             else int(x.split('=')[-1][:-5]))
 
@@ -79,7 +83,12 @@ def main(unused_argv):
         raise ValueError("Wrong checkpoint_dir.")
     
     # reload state
-    system = RefNeRFSystem.load_from_checkpoint(os.path.join(config.checkpoint_dir, 'ckpt', config.exp_name, checkpoint_name), hparams=hparams, config=config, summary_writer=summary_writer)
+    system = RefNeRFSystem.load_from_checkpoint(os.path.join(config.checkpoint_dir, 
+                                                'ckpt', 
+                                                config.exp_name.split('_')[0],
+                                                config.exp_name,
+                                                checkpoint_name), 
+                                                hparams=hparams, config=config, summary_writer=summary_writer)
 
 
     step = checkpoint_name.split('=')[-1][:-5]
