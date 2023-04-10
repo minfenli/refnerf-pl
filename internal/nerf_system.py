@@ -338,7 +338,7 @@ class RefNeRFSystem(LightningModule):
         self.showcases = []
         self.render_times = []
 
-        out_dir = os.path.join(self.config.checkpoint_dir, 'ckpt', self.config.exp_name,
+        out_dir = os.path.join(self.config.checkpoint_dir, 'ckpt', self.config.exp_name.split('_')[0], self.config.exp_name,
                            'path_renders' if self.config.render_path else 'test_preds')
         
         if self.config.eval_save_output and (not utils.isdir(out_dir)):

@@ -46,7 +46,7 @@ def main(unused_argv):
     hparams = asdict(config)
 
     summary_writer = SummaryWriter(
-        os.path.join(config.checkpoint_dir, 'ckpt', config.exp_name, 'test'))
+        os.path.join(config.checkpoint_dir, 'ckpt', config.exp_name.split('_')[0], config.exp_name, 'render'))
 
     # Setup device.
     if torch.cuda.is_available():
@@ -98,10 +98,16 @@ def main(unused_argv):
     out_name = f'{out_name}_step_{step}'
     base_dir = config.render_dir
     if base_dir is None:
-        base_dir = os.path.join(config.checkpoint_dir, 'render')
+        base_dir = os.path.join(os.path.join(config.checkpoint_dir, 
+                                             'ckpt', 
+                                             config.exp_name.split('_')[0],
+                                             config.exp_name),
+                                             'render')
     out_dir = os.path.join(base_dir, out_name)
     if not utils.isdir(out_dir):
         utils.makedirs(out_dir)
+    
+    print(base_dir, out_dir, out_name)
 
     system.render(dataset, base_dir, out_dir, out_name)
 

@@ -1,4 +1,4 @@
-Config.dataset_loader = 'llff'
+Config.dataset_loader = 'rffr'
 Config.batching = 'all_images'
 Config.near = 0.
 Config.far = 1.

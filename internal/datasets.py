@@ -822,9 +822,7 @@ class RFFR(BaseDataset):
             utils.DataSplit.TEST: all_indices[all_indices % config.llffhold == 0],
             utils.DataSplit.TRAIN: train_indices,
         }
-        print(self.split)
         indices = split_indices[self.split]
-        print(len(images))
         # All per-image quantities must be re-indexed using the split indices.
         images = images[indices]
         poses = poses[indices]
@@ -838,7 +836,6 @@ class RFFR(BaseDataset):
         self.images = images
         self.camtoworlds = self.render_poses if config.render_path else poses
         self.height, self.width = images.shape[1:3]
-        print(len(self.images))
 
 
 class TanksAndTemplesNerfPP(BaseDataset):

@@ -49,9 +49,9 @@ def main(unused_argv):
     hparams = asdict(config)
 
     summary_writer = SummaryWriter(
-        os.path.join(config.checkpoint_dir, 'ckpt', config.exp_name, 'test'))
+        os.path.join(config.checkpoint_dir, 'ckpt', config.exp_name.split('_')[0], config.exp_name, 'test_preds'))
 
-    files = sorted([f for f in os.listdir(os.path.join(config.checkpoint_dir, 'ckpt', config.exp_name))
+    files = sorted([f for f in os.listdir(os.path.join(config.checkpoint_dir, 'ckpt', config.exp_name.split('_')[0], config.exp_name))
                     if f.endswith('.ckpt')], key=lambda x: 1e10 if x.split('=')[-1][:-5]=='last'\
                         else int(x.split('=')[-1][:-5]))
     # if there are checkpoints in the dir, load the latest checkpoint
@@ -61,7 +61,7 @@ def main(unused_argv):
 
     # reload state
     checkpoint_name = files[-1]
-    system = RefNeRFSystem.load_from_checkpoint(os.path.join(config.checkpoint_dir, 'ckpt', config.exp_name, checkpoint_name), hparams=hparams, config=config, summary_writer=summary_writer)
+    system = RefNeRFSystem.load_from_checkpoint(os.path.join(config.checkpoint_dir, 'ckpt', config.exp_name.split('_')[0], config.exp_name, checkpoint_name), hparams=hparams, config=config, summary_writer=summary_writer)
 
     trainer = Trainer(
         max_steps=config.max_steps,
