@@ -1,0 +1,90 @@
+# Parameters for Config:
+# ==============================================================================
+Config.acc_threshold_for_consistency_loss = 0.1
+Config.acc_threshold_for_weights_entropy_loss = 0.1
+Config.accumulated_weights_loss_mult = 0.0003
+Config.adam_beta1 = 0.9
+Config.adam_beta2 = 0.999
+Config.adam_eps = 1e-06
+Config.batch_size = 1024
+Config.batching = 'all_images'
+Config.checkpoint_dir = '/media/NFS/fong/refnerf-pytorch-pl/exps'
+Config.checkpoint_every = 1.0
+Config.compute_normal_metrics = False
+Config.consistency_diffuse_coarse_loss_mult = 3e-06
+Config.consistency_diffuse_loss_mult = 3e-05
+Config.consistency_diffuse_loss_type = 'var'
+Config.consistency_distance_coarse_loss_mult = 3e-07
+Config.consistency_distance_loss_mult = 3e-06
+Config.consistency_normal_coarse_loss_mult = 3e-06
+Config.consistency_normal_loss_mult = 3e-05
+Config.consistency_normal_loss_target = 'normals'
+Config.consistency_specular_coarse_loss_mult = 3e-06
+Config.consistency_specular_loss_mult = 3e-05
+Config.consistency_specular_loss_type = 'var'
+Config.consistency_warmup_steps = 0.6
+Config.data_coarse_loss_mult = 0.1
+Config.data_dir = '/media/public_dataset/NeRF/nerf_llff_data/trex'
+Config.data_loss_mult = 1.0
+Config.data_loss_type = 'mse'
+Config.dataset_loader = 'llff'
+Config.distortion_loss_mult = 0.0
+Config.eval_render_interval = 5
+Config.exp_name = \
+    'trex_srgb_multiray_128_4_a5_var_250k_w0.6_dis3e-6_ent3e-5_m0.1_p3e-5_acc3e-4_3view'
+Config.factor = 4
+Config.far = 1.0
+Config.forward_facing = True
+Config.interlevel_loss_mult = 0.0
+Config.max_steps = 250000
+Config.n_input_views = 3
+Config.near = 0.0
+Config.orientation_coarse_loss_mult = 0.01
+Config.orientation_loss_mult = 0.1
+Config.orientation_loss_target = 'normals_pred'
+Config.predicted_normal_coarse_loss_mult = 3e-06
+Config.predicted_normal_loss_mult = 3e-05
+Config.render_chunk_size = 4096
+Config.sample_angle_range = 5
+Config.sample_noise_angles = 4
+Config.sample_noise_size = 128
+Config.srgb_mapping_type = 'norm_linear'
+Config.srgb_mapping_when_rendering = True
+Config.supervised_by_linear_rgb = False
+Config.weights_entropy_coarse_loss_mult = 3e-06
+Config.weights_entropy_loss_mult = 3e-05
+
+# Parameters for Model:
+# ==============================================================================
+Model.anneal_slope = 0.0
+Model.dilation_bias = 0.0
+Model.dilation_multiplier = 0.0
+Model.num_levels = 2
+Model.num_nerf_samples = 128
+Model.num_prop_samples = 128
+Model.resample_padding = 0.01
+Model.single_jitter = False
+Model.single_mlp = True
+
+# Parameters for NerfMLP:
+# ==============================================================================
+NerfMLP.basis_shape = 'octahedron'
+NerfMLP.basis_subdivisions = 1
+NerfMLP.bottleneck_noise = 0.0
+NerfMLP.bottleneck_width = 128
+NerfMLP.deg_view = 5
+NerfMLP.density_bias = 0.5
+NerfMLP.disable_density_normals = False
+NerfMLP.enable_pred_normals = True
+NerfMLP.enable_pred_roughness = True
+NerfMLP.max_deg_point = 16
+NerfMLP.net_depth = 8
+NerfMLP.net_depth_viewdirs = 8
+NerfMLP.net_width = 256
+NerfMLP.net_width_viewdirs = 256
+NerfMLP.srgb_mapping = False
+NerfMLP.use_diffuse_color = True
+NerfMLP.use_directional_enc = True
+NerfMLP.use_n_dot_v = True
+NerfMLP.use_reflections = True
+NerfMLP.use_specular_tint = True
