@@ -61,7 +61,7 @@ We found that in forward-facing settings, NeRF models may generate results with 
 
 In our tests, improvements were not always guaranteed across different experimental settings with a given parameter setting. It still needs to be adjusted in different scenarios.
 
-## Awesome NeRF with Geometry losses
+## Awesome NeRF with Geometry Losses
 * [Ref-NeRF: Structured View-Dependent Appearance for Neural Radiance Fields](https://dorverbin.github.io/refnerf/) (CVPR 2022)
 * [Scalable Neural Indoor Scene Rendering](https://xchaowu.github.io/papers/scalable-nisr/) (SIGGRAPH 2022)
 * [NeRFReN: Neural Radiance Fields with Reflections](https://bennyguo.github.io/nerfren/) (CVPR 2022)
