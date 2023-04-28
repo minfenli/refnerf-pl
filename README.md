@@ -51,7 +51,7 @@ To work from an example, you can see how this function is overloaded for the dif
 
 We found that in forward-facing settings, NeRF models may generate results with poor geometric properties (e.g. predicting all normals facing forward, no density in white background, etc.). Therefore, we add several geometric losses and consistency losses to constrain the model to satisfy geometric priors, references for these ideas can be found in the list of papers below.
 
-| | Ref-NeRF | Ref-NeRF + Geometry losses |
+| | Ref-NeRF w/o Geometry Losses | Ref-NeRF w/ Geometry Losses |
 | :---: | :---: | :---:|
 | RGB | <video width="50%" src="https://user-images.githubusercontent.com/33437552/235092130-cfa2f352-b241-46ec-98ed-a1af42fef4ae.mp4"> | <video width="50%" src="https://user-images.githubusercontent.com/33437552/235091995-daa678a4-bb34-4ee1-8d62-b83593cf0540.mp4"> |
 | Accumulated Density | <video width="50%" src="https://user-images.githubusercontent.com/33437552/235092113-39d80106-2947-42d6-b586-1276e39f463e.mp4"> | <video width="50%" src="https://user-images.githubusercontent.com/33437552/235091551-eb821904-8e3b-4588-9c7e-84e2ba79f6e1.mp4"> |
