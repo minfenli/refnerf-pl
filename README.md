@@ -53,10 +53,10 @@ We found that in forward-facing settings, NeRF models may generate results with 
 
 | | Ref-NeRF w/o Geometry Losses | Ref-NeRF w/ Geometry Losses |
 | :---: | :---: | :---:|
-| RGB | <video width="50%" src="https://user-images.githubusercontent.com/33437552/235092130-cfa2f352-b241-46ec-98ed-a1af42fef4ae.mp4"> | <video width="50%" src="https://user-images.githubusercontent.com/33437552/235091995-daa678a4-bb34-4ee1-8d62-b83593cf0540.mp4"> |
-| Accumulated Density | <video width="50%" src="https://user-images.githubusercontent.com/33437552/235092113-39d80106-2947-42d6-b586-1276e39f463e.mp4"> | <video width="50%" src="https://user-images.githubusercontent.com/33437552/235091551-eb821904-8e3b-4588-9c7e-84e2ba79f6e1.mp4"> |
-| Normal | <video width="50%" src="https://user-images.githubusercontent.com/33437552/235092339-043ae1a5-36a2-423d-894a-4e03363b4f6a.mp4"> | <video width="50%" src="https://user-images.githubusercontent.com/33437552/235091817-bc62bd84-7b1c-4195-808f-be6a4ca24b53.mp4"> |
-| Median Distance | <video width="50%" src="https://user-images.githubusercontent.com/33437552/235092233-5026a566-a239-44bb-9f02-e13e7392e4a2.mp4"> | <video width="50%" src="https://user-images.githubusercontent.com/33437552/235091801-4ff9ec5c-4bc8-44a1-b88a-71910b0894f1.mp4"> |
+| RGB | <video width="50%" src="https://user-images.githubusercontent.com/33437552/235092130-cfa2f352-b241-46ec-98ed-a1af42fef4ae.mp4"> | <video width="50%" src="https://user-images.githubusercontent.com/33437552/235099647-604cbffb-8626-40dd-ab16-53f83241a6c0.mp4"> |
+| Accumulated Density | <video width="50%" src="https://user-images.githubusercontent.com/33437552/235092113-39d80106-2947-42d6-b586-1276e39f463e.mp4"> | <video width="50%" src="https://user-images.githubusercontent.com/33437552/235099625-76180635-d83c-40c7-87f9-af439d57a09f.mp4"> |
+| Normal | <video width="50%" src="https://user-images.githubusercontent.com/33437552/235092339-043ae1a5-36a2-423d-894a-4e03363b4f6a.mp4"> | <video width="50%" src="https://user-images.githubusercontent.com/33437552/235099698-e2b5867b-4b5d-42fa-81f1-f0bd71a159c8.mp4"> |
+| Median Distance | <video width="50%" src="https://user-images.githubusercontent.com/33437552/235092233-5026a566-a239-44bb-9f02-e13e7392e4a2.mp4"> | <video width="50%" src="https://user-images.githubusercontent.com/33437552/235099680-b9fa892c-ff54-452e-bdf6-cc36b253b4d8.mp4"> |
 | PSNR(↑) / SSIM(↑) / LPIPS(↓) | 26.310 / 0.862 / 0.205 | **26.395** / **0.866** / **0.199** |
 
 In our tests, improvements were not always guaranteed across different experimental settings with a given parameter setting. It still needs to be adjusted in different scenarios.
