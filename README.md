@@ -32,15 +32,11 @@ are located. [Gin](https://github.com/google/gin-config) configuration files for
 
 ### OOM errors
 
-You may need to reduce the batch size (`Config.batch_size`) to avoid out of memory
-errors. If you do this, but want to preserve quality, be sure to increase the number
-of training iterations and decrease the learning rate by whatever scale factor you
-decrease batch size by.
+You may need to reduce the batch size (`Config.batch_size`) to avoid out-of-memory errors. If you do this but want to preserve quality, be sure to increase the number of training iterations and decrease the learning rate by whatever scale factor you decrease the batch size by.
 
 ### Existing data loaders
 
-To work from an example, you can see how this function is overloaded for the
-different dataloaders we have already implemented:
+To work from an example, you can see how this function is overloaded for the different dataloaders we have already implemented:
 
 - Blender (*)
 - LLFF (*)
@@ -57,10 +53,10 @@ We found that in forward-facing settings, NeRF models may generate results with 
 
 | | Ref-NeRF | Ref-NeRF + Geometry losses |
 | :---: | :---: | :---:|
-| RGB | <video width="100%" src="https://user-images.githubusercontent.com/33437552/235074047-31755dea-ab60-4c52-b56b-461eec9ca409.mp4"> | <video width="100%" src="https://user-images.githubusercontent.com/33437552/235073307-b54735cd-6ec7-4eb2-a0ed-6d51ac9a5a84.mp4"> |
-| Accumulated Density | <video width="100%" src="https://user-images.githubusercontent.com/33437552/235074024-206072d9-ed31-4fe3-ab6e-4537ecf0a431.mp4"> | <video width="100%" src="https://user-images.githubusercontent.com/33437552/235073266-694ea3e7-e5e5-4efd-8df8-cd2b51aa69fc.mp4"> |
-| Normal | <video width="100%" src="https://user-images.githubusercontent.com/33437552/235074097-f7f6430a-be4a-42e2-af57-2bba782ad94c.mp4"> | <video width="100%" src="https://user-images.githubusercontent.com/33437552/235073342-58838477-5a15-4e5e-a339-a5a7b157de39.mp4"> |
-| Median Distance | <video width="100%" src="https://user-images.githubusercontent.com/33437552/235074065-5b9b898c-c661-46e7-a8e4-b5850833085a.mp4"> | <video width="100%" src="https://user-images.githubusercontent.com/33437552/235073323-1e2103b8-948c-4488-8114-5a2321f5feb5.mp4"> |
+| RGB | <video width="50%" src="https://user-images.githubusercontent.com/33437552/235092130-cfa2f352-b241-46ec-98ed-a1af42fef4ae.mp4"> | <video width="50%" src="https://user-images.githubusercontent.com/33437552/235091995-daa678a4-bb34-4ee1-8d62-b83593cf0540.mp4"> |
+| Accumulated Density | <video width="50%" src="https://user-images.githubusercontent.com/33437552/235092113-39d80106-2947-42d6-b586-1276e39f463e.mp4"> | <video width="50%" src="https://user-images.githubusercontent.com/33437552/235091551-eb821904-8e3b-4588-9c7e-84e2ba79f6e1.mp4"> |
+| Normal | <video width="50%" src="https://user-images.githubusercontent.com/33437552/235092339-043ae1a5-36a2-423d-894a-4e03363b4f6a.mp4"> | <video width="50%" src="https://user-images.githubusercontent.com/33437552/235091817-bc62bd84-7b1c-4195-808f-be6a4ca24b53.mp4"> |
+| Median Distance | <video width="50%" src="https://user-images.githubusercontent.com/33437552/235092233-5026a566-a239-44bb-9f02-e13e7392e4a2.mp4"> | <video width="50%" src="https://user-images.githubusercontent.com/33437552/235091801-4ff9ec5c-4bc8-44a1-b88a-71910b0894f1.mp4"> |
 | PSNR(↑) / SSIM(↑) / LPIPS(↓) | 26.310 / 0.862 / 0.205 | **26.395** / **0.866** / **0.199** |
 
 In our tests, improvements were not always guaranteed across different experimental settings with a given parameter setting. It still needs to be adjusted in different scenarios.
@@ -70,7 +66,7 @@ In our tests, improvements were not always guaranteed across different experimen
 * [Scalable Neural Indoor Scene Rendering](https://xchaowu.github.io/papers/scalable-nisr/) (SIGGRAPH 2022)
 * [NeRFReN: Neural Radiance Fields with Reflections](https://bennyguo.github.io/nerfren/) (CVPR 2022)
 
-Following papers mainly discuss issues of few-shot NeRF (traing NeRF with limited input images).
+The following papers mainly discuss issues of few-shot NeRF (training NeRF with limited input images).
 
 * [Ray Priors through Reprojection: Improving Neural Radiance Fields for Novel View Extrapolation](https://openaccess.thecvf.com/content/CVPR2022/papers/Zhang_Ray_Priors_Through_Reprojection_Improving_Neural_Radiance_Fields_for_Novel_CVPR_2022_paper.pdf) (CVPR 2022)
 * [InfoNeRF: Ray Entropy Minimization for Few-Shot Neural Volume Rendering](https://cv.snu.ac.kr/research/InfoNeRF/) (CVPR 2022)
