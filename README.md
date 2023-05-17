@@ -74,9 +74,10 @@ The following papers mainly discuss issues of few-shot NeRF (training NeRF with 
 * [GeCoNeRF: Few-shot Neural Radiance Fields via Geometric Consistency](https://ku-cvlab.github.io/GeCoNeRF/) (ICML 2023)
 * [Dense Depth Priors for Neural Radiance Fields from Sparse Input Views](https://barbararoessle.github.io/dense_depth_priors_nerf/) (CVPR 2022)
 * [Depth-supervised NeRF: Fewer Views and Faster Training for Free](https://www.cs.cmu.edu/~dsnerf/) (CVPR 2022)
-* [RegNeRF: Regularizing Neural Radiance Fields for View Synthesis from Sparse  Inputs](https://www.cs.cmu.edu/~dsnerf/) (CVPR 2022)
+* [RegNeRF: Regularizing Neural Radiance Fields for View Synthesis from Sparse  Inputs](https://m-niemeyer.github.io/regnerf/index.html) (CVPR 2022)
 * [Putting NeRF on a Diet: Semantically Consistent Few-Shot View Synthesis](https://ajayj.com/dietnerf/) (ICCV 2021)
 * [DiffusioNeRF: Regularizing Neural Radiance Fields with Denoising Diffusion Models](https://github.com/nianticlabs/diffusionerf) (Arxiv 2023)
+* [Nerfbusters: Removing Ghostly Artifacts from Casually Captured NeRFs](https://ethanweber.me/nerfbusters/) (Arxiv 2023)
 
 
 ## References
