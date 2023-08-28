@@ -76,8 +76,14 @@ The following papers mainly discuss issues of few-shot NeRF (training NeRF with 
 * [Depth-supervised NeRF: Fewer Views and Faster Training for Free](https://www.cs.cmu.edu/~dsnerf/) (CVPR 2022)
 * [RegNeRF: Regularizing Neural Radiance Fields for View Synthesis from Sparse  Inputs](https://m-niemeyer.github.io/regnerf/index.html) (CVPR 2022)
 * [Putting NeRF on a Diet: Semantically Consistent Few-Shot View Synthesis](https://ajayj.com/dietnerf/) (ICCV 2021)
-* [DiffusioNeRF: Regularizing Neural Radiance Fields with Denoising Diffusion Models](https://github.com/nianticlabs/diffusionerf) (Arxiv 2023)
-* [Nerfbusters: Removing Ghostly Artifacts from Casually Captured NeRFs](https://ethanweber.me/nerfbusters/) (Arxiv 2023)
+* [DiffusioNeRF: Regularizing Neural Radiance Fields with Denoising Diffusion Models](https://github.com/nianticlabs/diffusionerf) (CVPR 2023)
+* [Nerfbusters: Removing Ghostly Artifacts from Casually Captured NeRFs](https://ethanweber.me/nerfbusters/) (ICCV 2023)
+* [SparseNeRF: Distilling Depth Ranking for Few-shot Novel View Synthesis](https://sparsenerf.github.io/) (ICCV 2023)
+* [FlipNeRF: Flipped Reflection Rays for Few-shot Novel View Synthesis](https://shawn615.github.io/flipnerf/) (ICCV 2023)
+* [ViP-NeRF: Visibility Prior for Sparse Input Neural Radiance Fields](https://nagabhushansn95.github.io/publications/2023/ViP-NeRF.html) (SIGGRAPH 2023)
+
+Feel free to email me if you find any cool papers that should be on the list !!
+
 
 
 ## References
