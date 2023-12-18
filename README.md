@@ -1,4 +1,4 @@
-# refnerf-pytorch-lighting
+# refnerf-pytorch-lightning
 
 This is an implementation of [Ref-NeRF](https://dorverbin.github.io/refnerf/), which is extended from [refnerf-pytorch](https://github.com/gkouros/refnerf-pytorch) based on the original [jax code](https://github.com/google-research/multinerf) released by Google.
 
