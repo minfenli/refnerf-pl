@@ -81,6 +81,7 @@ The following papers mainly discuss issues of few-shot NeRF (training NeRF with 
 * [SparseNeRF: Distilling Depth Ranking for Few-shot Novel View Synthesis](https://sparsenerf.github.io/) (ICCV 2023)
 * [FlipNeRF: Flipped Reflection Rays for Few-shot Novel View Synthesis](https://shawn615.github.io/flipnerf/) (ICCV 2023)
 * [ViP-NeRF: Visibility Prior for Sparse Input Neural Radiance Fields](https://nagabhushansn95.github.io/publications/2023/ViP-NeRF.html) (SIGGRAPH 2023)
+* [FreeNeRF: Improving Few-shot Neural Rendering with Free Frequency Regularization](https://jiawei-yang.github.io/FreeNeRF/) (CVPR 2023)
 
 Feel free to email me if you find any cool papers that should be on the list !!
 
